@@ -3,22 +3,22 @@
  * Tela de login com email e senha.
  */
 
+import LogoHealthDay from '@/components/LogoHealthDay';
+import { login } from '@/constants/Storage';
+import { HD } from '@/constants/theme';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  StatusBar,
-  ScrollView,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { HD } from '@/constants/theme';
-import { login } from '@/constants/Storage';
-import LogoHealthDay from '@/components/LogoHealthDay';
 
 export default function LoginScreen() {
   const [email,   setEmail]   = useState('');
@@ -34,7 +34,7 @@ export default function LoginScreen() {
     try {
       const user = await login(email.trim(), senha);
       if (!user) {
-        Alert.alert('Erro', 'Email ou senha incorretos.');
+        Alert.alert('Error', 'Email ou senha incorretos.');
         return;
       }
       if (user.role === 'admin') {
