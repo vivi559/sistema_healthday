@@ -71,7 +71,8 @@ export default function ImcScreen() {
           imc:    resultado,
         });
       }
-      router.replace('/(usuario)/home' as any);
+      // ✅ Após IMC → vai para o questionário de perfil
+      router.replace('/(usuario)/questionario' as any);
     } catch (e) {
       Alert.alert('Erro', 'Não foi possível salvar os dados.');
     } finally {

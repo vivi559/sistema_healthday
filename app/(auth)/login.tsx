@@ -34,7 +34,7 @@ export default function LoginScreen() {
     try {
       const user = await login(email.trim(), senha);
       if (!user) {
-        Alert.alert('Error', 'Email ou senha incorretos.');
+        Alert.alert('Erro', 'Email ou senha incorretos.');
         return;
       }
       if (user.role === 'admin') {
@@ -42,7 +42,12 @@ export default function LoginScreen() {
       } else if (user.role === 'especialista') {
         router.replace('/(especialista)');
       } else {
-        router.replace('/(usuario)/home');
+        // ✅ Usuário comum: verifica se já fez o questionário
+        if (!user.questionarioFeito) {
+          router.replace('/(usuario)/questionario' as any);
+        } else {
+          router.replace('/(usuario)/home');
+        }
       }
     } catch (e) {
       Alert.alert('Erro', 'Não foi possível fazer login.');
@@ -58,12 +63,10 @@ export default function LoginScreen() {
     >
       <StatusBar barStyle="dark-content" backgroundColor={HD.background} />
 
-      {/* Logo */}
       <View style={styles.logoContainer}>
         <LogoHealthDay size={80} showName />
       </View>
 
-      {/* Card do formulário */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Login</Text>
 

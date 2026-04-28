@@ -38,7 +38,7 @@ export default function CadastroScreen() {
     setLoading(true);
     try {
       await cadastrarUsuario({ nome, email, senha });
-      router.replace('/(auth)/imc');
+      router.replace('/(auth)/imc'); // → imc → questionario → home
     } catch (e) {
       Alert.alert('Erro', 'Não foi possível criar a conta.');
     } finally {
@@ -53,12 +53,10 @@ export default function CadastroScreen() {
     >
       <StatusBar barStyle="dark-content" backgroundColor={HD.background} />
 
-      {/* Logo */}
       <View style={styles.logoContainer}>
         <LogoHealthDay size={80} showName />
       </View>
 
-      {/* Card do formulário */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Criar Conta</Text>
 
