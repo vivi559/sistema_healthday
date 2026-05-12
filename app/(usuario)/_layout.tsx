@@ -3,14 +3,14 @@
  * Tab bar principal do usuário — home, treinos, dieta, agenda, perfil.
  */
 
+import { HD } from '@/constants/theme';
 import { Tabs } from 'expo-router';
 import {
-  View,
-  Text,
-  StyleSheet,
   Platform,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { HD } from '@/constants/theme';
 
 // ─── Ícones em emoji/texto (sem biblioteca externa) ───────────────────────────
 
@@ -70,6 +70,12 @@ export default function UsuarioLayout() {
         ),
       }}
     >
+      {/* Tela oculta — não aparece na tab bar */}
+      <Tabs.Screen
+        name="questionario"
+        options={{ href: null }}
+      />
+
       <Tabs.Screen
         name="home"
         options={{

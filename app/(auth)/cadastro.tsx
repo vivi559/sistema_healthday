@@ -38,7 +38,8 @@ export default function CadastroScreen() {
     setLoading(true);
     try {
       await cadastrarUsuario({ nome, email, senha });
-      router.replace('/(auth)/imc'); // → imc → questionario → home
+      // Novo usuário → vai direto para o questionário
+      router.replace('/(usuario)/questionario');
     } catch (e) {
       Alert.alert('Erro', 'Não foi possível criar a conta.');
     } finally {
@@ -129,10 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
+  logoContainer: { alignItems: 'center', marginBottom: 24 },
   card: {
     width: '100%',
     backgroundColor: HD.cardLight,
@@ -140,18 +138,8 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 20,
   },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: HD.secondary,
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    color: HD.secondary,
-    marginBottom: 6,
-    fontWeight: '500',
-  },
+  cardTitle: { fontSize: 24, fontWeight: '700', color: HD.secondary, marginBottom: 20 },
+  label:     { fontSize: 14, color: HD.secondary, marginBottom: 6, fontWeight: '500' },
   input: {
     borderWidth: 1.5,
     borderColor: HD.inputBorder,
@@ -171,29 +159,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 12,
   },
-  btnText: {
-    color: HD.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  aviso: {
-    fontSize: 11,
-    color: HD.textLight,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  linkText: {
-    fontSize: 14,
-    color: HD.textMedium,
-    marginBottom: 32,
-  },
-  linkBold: {
-    color: HD.primary,
-    fontWeight: '700',
-  },
-  tagline: {
-    fontSize: 15,
-    color: HD.secondary,
-    fontStyle: 'italic',
-  },
+  btnText: { color: HD.white, fontSize: 16, fontWeight: '700' },
+  aviso:   { fontSize: 11, color: HD.textLight, textAlign: 'center', lineHeight: 16 },
+  linkText: { fontSize: 14, color: HD.textMedium, marginBottom: 32 },
+  linkBold: { color: HD.primary, fontWeight: '700' },
+  tagline:  { fontSize: 15, color: HD.secondary, fontStyle: 'italic' },
 });
