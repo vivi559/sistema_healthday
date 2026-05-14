@@ -3,6 +3,8 @@
  * Tela de dieta com refeições expansíveis e busca de alimentos.
  */
 
+//teste vinicius
+
 import LogoHealthDay from '@/components/LogoHealthDay';
 import {
   alimentosSeed,
