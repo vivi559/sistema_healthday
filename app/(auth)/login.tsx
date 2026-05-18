@@ -38,9 +38,9 @@ export default function LoginScreen() {
         return;
       }
       if (user.role === 'admin') {
-        router.replace('/(admin)');
+        router.replace('/(admin)/dashboard');
       } else if (user.role === 'especialista') {
-        router.replace('/(especialista)');
+        router.replace('/(especialista)/treinos');
       } else {
         // ✅ Usuário comum: verifica se já fez o questionário
         if (!user.questionarioFeito) {
