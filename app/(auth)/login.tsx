@@ -46,7 +46,7 @@ export default function LoginScreen() {
         if (!user.questionarioFeito) {
           router.replace('/(usuario)/questionario' as any);
         } else {
-          router.replace('/(usuario)/home');
+          router.replace('/(usuario)/home');            
         }
       }
     } catch (e) {
