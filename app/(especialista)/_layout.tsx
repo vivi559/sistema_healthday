@@ -17,16 +17,11 @@ export default function RootLayout() {
     <TemaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="index"                       options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/welcome"              options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/questionario"      options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/home"              options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/dieta"             options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/treinos"           options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/agenda"            options={{ headerShown: false }} />
-          <Stack.Screen name="(usuario)/perfil"            options={{ headerShown: false }} />
-          <Stack.Screen name="(especialista)"              options={{ headerShown: false }} />
-          <Stack.Screen name="(admin)"                     options={{ headerShown: false }} />
+          <Stack.Screen name="index"          options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)"         options={{ headerShown: false }} />
+          <Stack.Screen name="(usuario)"      options={{ headerShown: false }} />
+          <Stack.Screen name="(especialista)" options={{ headerShown: false }} />
+          <Stack.Screen name="(admin)"        options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
