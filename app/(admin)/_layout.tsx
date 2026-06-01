@@ -3,14 +3,14 @@
  * Tab bar do painel de administrador — dashboard, usuários, especialistas, relatórios, perfil.
  */
 
+import { HD } from '@/constants/theme';
 import { Tabs } from 'expo-router';
 import {
-  View,
-  Text,
-  StyleSheet,
   Platform,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { HD } from '@/constants/theme';
 
 function IconDashboard({ focused }: { focused: boolean }) {
   return (
@@ -81,7 +81,7 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
-        name="especialistas"
+        name="especialista"
         options={{
           title: 'especialistas',
           tabBarIcon: ({ focused }) => <IconEspecialistas focused={focused} />,
