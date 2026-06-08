@@ -42,10 +42,46 @@ export default function EspecialistaDieta() {
   const [showRefeicoes, setShowRefeicoes] = useState(false);
   const [busca, setBusca] = useState('');
   const [alimentosSelecionados, setAlimentosSelecionados] = useState<any[]>([]);
+  const [aba, setAba] = useState<'criar' | 'gerenciar'>('criar');
+  const [dietasSalvas, setDietasSalvas] = useState<any>({});
 
   useEffect(() => {
     carregarAlunos();
   }, []);
+
+  useEffect(() => {
+    if (alunoSelecionado) carregarDietasSalvas(alunoSelecionado.id);
+  }, [alunoSelecionado, aba]);
+
+  const carregarDietasSalvas = async (alunoId: string) => {
+    try {
+      const chave = `@dieta_especialista_${alunoId}`;
+      const existente = await AsyncStorage.getItem(chave);
+      setDietasSalvas(existente ? JSON.parse(existente) : {});
+    } catch {
+      setDietasSalvas({});
+    }
+  };
+
+  const removerRefeicaoSalva = async (dia: string, refeicao: string) => {
+    if (!alunoSelecionado) return;
+    Alert.alert('Remover', `Remover "${refeicao}" de ${dia}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover', style: 'destructive',
+        onPress: async () => {
+          const chave = `@dieta_especialista_${alunoSelecionado.id}`;
+          const novas = { ...dietasSalvas };
+          if (novas[dia]) {
+            delete novas[dia][refeicao];
+            if (Object.keys(novas[dia]).length === 0) delete novas[dia];
+          }
+          await AsyncStorage.setItem(chave, JSON.stringify(novas));
+          setDietasSalvas({ ...novas });
+        },
+      },
+    ]);
+  };
 
   const carregarAlunos = async () => {
     try {
@@ -120,7 +156,19 @@ export default function EspecialistaDieta() {
         <Ionicons name="menu-outline" size={28} color={HD.primary} />
       </View>
 
+      {/* Abas */}
+      <View style={s.abasRow}>
+        <TouchableOpacity style={[s.abaBtn, aba === 'criar' && s.abaBtnAtivo]} onPress={() => setAba('criar')}>
+          <Text style={[s.abaTxt, aba === 'criar' && s.abaTxtAtivo]}>Criar Dieta</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.abaBtn, aba === 'gerenciar' && s.abaBtnAtivo]} onPress={() => setAba('gerenciar')}>
+          <Text style={[s.abaTxt, aba === 'gerenciar' && s.abaTxtAtivo]}>Gerenciar</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+        {aba === 'criar' && (
+        <View>
         {/* Dias da semana */}
         <View style={s.diasRow}>
           {DIAS.map(dia => (
@@ -201,6 +249,45 @@ export default function EspecialistaDieta() {
           </View>
         )}
 
+        </View>)}
+
+        {/* ── Seção Gerenciar ── */}
+        {aba === 'gerenciar' && (
+          <View>
+            {!alunoSelecionado ? (
+              <View style={s.emptyBox}>
+                <Text style={s.emptyTxt}>Selecione um aluno acima para ver as dietas.</Text>
+              </View>
+            ) : Object.keys(dietasSalvas).length === 0 ? (
+              <View style={s.emptyBox}>
+                <Text style={s.emptyTxt}>Nenhuma dieta cadastrada para {alunoSelecionado.nome}.</Text>
+              </View>
+            ) : (
+              DIAS.filter(d => dietasSalvas[d] && Object.keys(dietasSalvas[d]).length > 0).map(dia => (
+                <View key={dia} style={s.diaBox}>
+                  <Text style={s.diaTituloGerenciar}>📅 {dia}</Text>
+                  {Object.entries(dietasSalvas[dia]).map(([refeicao, alimentos]: [string, any]) => (
+                    <View key={refeicao} style={s.refeicaoCard}>
+                      <View style={s.refeicaoHeader}>
+                        <Text style={s.refeicaoNome}>{refeicao}</Text>
+                        <TouchableOpacity onPress={() => removerRefeicaoSalva(dia, refeicao)}>
+                          <Ionicons name="trash-outline" size={18} color={HD.accent} />
+                        </TouchableOpacity>
+                      </View>
+                      {alimentos.map((al: any) => (
+                        <View key={al.id} style={s.alimentoSalvoRow}>
+                          <Text style={s.alimentoSalvoNome}>• {al.nome}</Text>
+                          <Text style={s.alimentoSalvoKcal}>{al.kcal}kcal</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -245,4 +332,19 @@ const styles = (temaDark: boolean) => StyleSheet.create({
   finalizarBtn: { backgroundColor: HD.primary, borderRadius: 30, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
   finalizarTxt: { color: '#fff', fontSize: 17, fontWeight: '700' },
   checkCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+  abasRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: temaDark ? '#2a2a2a' : '#eee', borderRadius: 12, padding: 4 },
+  abaBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  abaBtnAtivo: { backgroundColor: HD.primary },
+  abaTxt: { fontSize: 14, fontWeight: '600', color: temaDark ? '#aaa' : '#666' },
+  abaTxtAtivo: { color: '#fff' },
+  emptyBox: { padding: 32, alignItems: 'center' },
+  emptyTxt: { color: temaDark ? '#aaa' : '#888', fontSize: 14, textAlign: 'center' },
+  diaBox: { backgroundColor: temaDark ? '#2a2a2a' : '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 2 },
+  diaTituloGerenciar: { fontSize: 14, fontWeight: '700', color: HD.primary, marginBottom: 10 },
+  refeicaoCard: { backgroundColor: temaDark ? '#333' : '#f5f5f5', borderRadius: 10, padding: 12, marginBottom: 8 },
+  refeicaoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  refeicaoNome: { fontSize: 13, fontWeight: '700', color: temaDark ? '#eee' : '#333' },
+  alimentoSalvoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
+  alimentoSalvoNome: { fontSize: 13, color: temaDark ? '#ccc' : '#555' },
+  alimentoSalvoKcal: { fontSize: 12, color: HD.primary, fontWeight: '600' },
 });

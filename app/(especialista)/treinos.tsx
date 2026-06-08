@@ -55,10 +55,44 @@ export default function EspecialistaTreinos() {
   const [showIntervalo, setShowIntervalo] = useState(false);
 
   const [exerciciosAdicionados, setExerciciosAdicionados] = useState<any[]>([]);
+  const [aba, setAba] = useState<'criar' | 'gerenciar'>('criar');
+  const [treinosSalvos, setTreinosSalvos] = useState<any>({});
 
   useEffect(() => {
     carregarAlunos();
   }, []);
+
+  useEffect(() => {
+    if (alunoSelecionado) carregarTreinosSalvos(alunoSelecionado.id);
+  }, [alunoSelecionado, aba]);
+
+  const carregarTreinosSalvos = async (alunoId: string) => {
+    try {
+      const chave = `@treino_especialista_${alunoId}`;
+      const existente = await AsyncStorage.getItem(chave);
+      setTreinosSalvos(existente ? JSON.parse(existente) : {});
+    } catch {
+      setTreinosSalvos({});
+    }
+  };
+
+  const removerExercicioSalvo = async (dia: string, idx: number) => {
+    if (!alunoSelecionado) return;
+    Alert.alert('Remover', 'Deseja remover este exercício?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover', style: 'destructive',
+        onPress: async () => {
+          const chave = `@treino_especialista_${alunoSelecionado.id}`;
+          const novos = { ...treinosSalvos };
+          novos[dia] = novos[dia].filter((_: any, i: number) => i !== idx);
+          if (novos[dia].length === 0) delete novos[dia];
+          await AsyncStorage.setItem(chave, JSON.stringify(novos));
+          setTreinosSalvos({ ...novos });
+        },
+      },
+    ]);
+  };
 
   const carregarAlunos = async () => {
     try {
@@ -164,8 +198,20 @@ export default function EspecialistaTreinos() {
         <Ionicons name="menu-outline" size={28} color={HD.primary} />
       </View>
 
+      {/* Abas */}
+      <View style={s.abasRow}>
+        <TouchableOpacity style={[s.abaBtn, aba === 'criar' && s.abaBtnAtivo]} onPress={() => setAba('criar')}>
+          <Text style={[s.abaTxt, aba === 'criar' && s.abaTxtAtivo]}>Criar Treino</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.abaBtn, aba === 'gerenciar' && s.abaBtnAtivo]} onPress={() => setAba('gerenciar')}>
+          <Text style={[s.abaTxt, aba === 'gerenciar' && s.abaTxtAtivo]}>Gerenciar</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Dias */}
+        {/* Formulário de criação */}
+        {aba === 'criar' && (
+        <View>
         <View style={s.diasRow}>
           {DIAS.map(dia => (
             <TouchableOpacity
@@ -258,6 +304,44 @@ export default function EspecialistaTreinos() {
           </View>
         )}
 
+        </View>)}
+
+        {/* ── Seção Gerenciar ── */}
+        {aba === 'gerenciar' && (
+          <View>
+            {!alunoSelecionado ? (
+              <View style={s.emptyBox}>
+                <Text style={s.emptyTxt}>Selecione um aluno acima para ver os treinos.</Text>
+              </View>
+            ) : Object.keys(treinosSalvos).length === 0 ? (
+              <View style={s.emptyBox}>
+                <Text style={s.emptyTxt}>Nenhum treino cadastrado para {alunoSelecionado.nome}.</Text>
+              </View>
+            ) : (
+              DIAS.filter(d => treinosSalvos[d] && treinosSalvos[d].length > 0).map(dia => (
+                <View key={dia} style={s.listaBox}>
+                  <Text style={s.listaTitulo}>📅 {dia}</Text>
+                  {treinosSalvos[dia].map((item: any, idx: number) => (
+                    <View key={idx} style={s.exercicioCard}>
+                      <View style={s.exercicioInfo}>
+                        <Text style={s.exercicioNome}>{idx + 1}. {item.exercicio?.nome ?? item.nome}</Text>
+                        <View style={s.badgesRow}>
+                          <View style={s.badge}><Text style={s.badgeTxt}>Séries {item.series}</Text></View>
+                          <View style={s.badge}><Text style={s.badgeTxt}>Reps {item.reps}</Text></View>
+                          <View style={s.badge}><Text style={s.badgeTxt}>{item.intervalo}</Text></View>
+                        </View>
+                      </View>
+                      <TouchableOpacity onPress={() => removerExercicioSalvo(dia, idx)}>
+                        <Ionicons name="trash-outline" size={20} color={HD.accent} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -305,4 +389,11 @@ const styles = (temaDark: boolean) => StyleSheet.create({
   concluirBtn: { backgroundColor: HD.primary, borderRadius: 30, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
   concluirTxt: { color: '#fff', fontSize: 17, fontWeight: '700' },
   checkCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+  abasRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: temaDark ? '#2a2a2a' : '#eee', borderRadius: 12, padding: 4 },
+  abaBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  abaBtnAtivo: { backgroundColor: HD.primary },
+  abaTxt: { fontSize: 14, fontWeight: '600', color: temaDark ? '#aaa' : '#666' },
+  abaTxtAtivo: { color: '#fff' },
+  emptyBox: { padding: 32, alignItems: 'center' },
+  emptyTxt: { color: temaDark ? '#aaa' : '#888', fontSize: 14, textAlign: 'center' },
 });

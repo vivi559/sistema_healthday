@@ -31,6 +31,14 @@ function IconSolicitacoes({ focused }: { focused: boolean }) {
   );
 }
 
+function IconPerfil({ focused }: { focused: boolean }) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Text style={styles.iconEmoji}>👤</Text>
+    </View>
+  );
+}
+
 export default function EspecialistaLayout() {
   return (
     <Tabs
@@ -62,6 +70,13 @@ export default function EspecialistaLayout() {
         options={{
           title: "Solicitações",
           tabBarIcon: ({ focused }) => <IconSolicitacoes focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="perfil"
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ focused }) => <IconPerfil focused={focused} />,
         }}
       />
     </Tabs>
