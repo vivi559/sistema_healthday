@@ -3,11 +3,11 @@
  * Tela de login com email e senha.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
-import { login } from '@/constants/Storage';
-import { HD } from '@/constants/theme';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import LogoHealthDay from "@/components/LogoHealthDay";
+import { login } from "@/constants/Storage";
+import { HD } from "@/constants/theme";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,39 +18,39 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function LoginScreen() {
-  const [email,   setEmail]   = useState('');
-  const [senha,   setSenha]   = useState('');
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
     if (!email.trim() || !senha.trim()) {
-      Alert.alert('Atenção', 'Preencha todos os campos.');
+      Alert.alert("Atenção", "Preencha todos os campos.");
       return;
     }
     setLoading(true);
     try {
       const user = await login(email.trim(), senha);
       if (!user) {
-        Alert.alert('Erro', 'Email ou senha incorretos.');
+        Alert.alert("Erro", "Email ou senha incorretos.");
         return;
       }
-      if (user.role === 'admin') {
-        router.replace('/(admin)/dashboard');
-      } else if (user.role === 'especialista') {
-        router.replace('/(especialista)/treinos');
+      if (user.role === "admin") {
+        router.replace("/(admin)/dashboard");
+      } else if (user.role === "especialista") {
+        router.replace("/(especialista)/treinos");
       } else {
         // ✅ Usuário comum: verifica se já fez o questionário
         if (!user.questionarioFeito) {
-          router.replace('/(usuario)/questionario' as any);
+          router.replace("/(auth)/questionario" as any);
         } else {
-          router.replace('/(usuario)/home');            
+          router.replace("/(usuario)/home");
         }
       }
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível fazer login.');
+      Alert.alert("Erro", "Não foi possível fazer login.");
     } finally {
       setLoading(false);
     }
@@ -97,14 +97,16 @@ export default function LoginScreen() {
           activeOpacity={0.8}
           disabled={loading}
         >
-          {loading
-            ? <ActivityIndicator color={HD.white} />
-            : <Text style={styles.btnText}>Login</Text>
-          }
+          {loading ? (
+            <ActivityIndicator color={HD.white} />
+          ) : (
+            <Text style={styles.btnText}>Login</Text>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.aviso}>
-          Seus dados são armazenados com segurança. Nunca envie senhas para terceiros.
+          Seus dados são armazenados com segurança. Nunca envie senhas para
+          terceiros.
         </Text>
       </View>
 
@@ -116,10 +118,9 @@ export default function LoginScreen() {
         <Text style={styles.testItem}>🔧 admin@email.com — admin123</Text>
       </View>
 
-      <TouchableOpacity onPress={() => router.push('/(auth)/cadastro')}>
+      <TouchableOpacity onPress={() => router.push("/(auth)/cadastro")}>
         <Text style={styles.linkText}>
-          Não tem conta?{' '}
-          <Text style={styles.linkBold}>Criar agora</Text>
+          Não tem conta? <Text style={styles.linkBold}>Criar agora</Text>
         </Text>
       </TouchableOpacity>
 
@@ -132,17 +133,17 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: HD.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   card: {
-    width: '100%',
+    width: "100%",
     backgroundColor: HD.cardLight,
     borderRadius: 20,
     padding: 24,
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.secondary,
     marginBottom: 20,
   },
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: HD.secondary,
     marginBottom: 6,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   input: {
     borderWidth: 1.5,
@@ -175,23 +176,23 @@ const styles = StyleSheet.create({
     backgroundColor: HD.secondary,
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 4,
     marginBottom: 12,
   },
   btnText: {
     color: HD.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   aviso: {
     fontSize: 11,
     color: HD.textLight,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 16,
   },
   testBox: {
-    width: '100%',
+    width: "100%",
     backgroundColor: HD.secondaryLight,
     borderRadius: 12,
     padding: 14,
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
   },
   testTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.textDark,
     marginBottom: 6,
   },
@@ -215,11 +216,11 @@ const styles = StyleSheet.create({
   },
   linkBold: {
     color: HD.primary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   tagline: {
     fontSize: 15,
     color: HD.secondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

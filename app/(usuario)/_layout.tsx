@@ -3,14 +3,9 @@
  * Tab bar principal do usuário — home, treinos, dieta, agenda, perfil.
  */
 
-import { HD } from '@/constants/theme';
-import { Tabs } from 'expo-router';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { HD } from "@/constants/theme";
+import { Tabs } from "expo-router";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 // ─── Ícones em emoji/texto (sem biblioteca externa) ───────────────────────────
 
@@ -65,49 +60,41 @@ export default function UsuarioLayout() {
         tabBarActiveTintColor: HD.white,
         tabBarInactiveTintColor: HD.white,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarBackground: () => (
-          <View style={styles.tabBarBackground} />
-        ),
+        tabBarBackground: () => <View style={styles.tabBarBackground} />,
       }}
     >
-      {/* Tela oculta — não aparece na tab bar */}
-      <Tabs.Screen
-        name="questionario"
-        options={{ href: null }}
-      />
-
       <Tabs.Screen
         name="home"
         options={{
-          title: 'home',
+          title: "home",
           tabBarIcon: ({ focused }) => <IconHome focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="treinos"
         options={{
-          title: 'treinos',
+          title: "treinos",
           tabBarIcon: ({ focused }) => <IconTreinos focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="dieta"
         options={{
-          title: 'dieta',
+          title: "dieta",
           tabBarIcon: ({ focused }) => <IconDieta focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="agenda"
         options={{
-          title: 'agenda',
+          title: "agenda",
           tabBarIcon: ({ focused }) => <IconAgenda focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
-          title: 'perfil',
+          title: "perfil",
           tabBarIcon: ({ focused }) => <IconPerfil focused={focused} />,
         }}
       />
@@ -118,7 +105,7 @@ export default function UsuarioLayout() {
 const styles = StyleSheet.create({
   // Tab bar pill cinza
   tabBar: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 24,
     right: 24,
@@ -131,7 +118,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 0,
+    paddingBottom: Platform.OS === "ios" ? 8 : 0,
   },
   tabBarBackground: {
     flex: 1,
@@ -144,8 +131,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   iconWrapActive: {
     backgroundColor: HD.primary,
@@ -157,7 +144,7 @@ const styles = StyleSheet.create({
   // Label
   tabLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     color: HD.white,
     marginTop: -4,
   },

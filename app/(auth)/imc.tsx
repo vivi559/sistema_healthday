@@ -3,16 +3,16 @@
  * Tela de cálculo de IMC após o cadastro.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
+import LogoHealthDay from "@/components/LogoHealthDay";
 import {
   atualizarUsuario,
   calcularIMC,
   classificarIMC,
   getUserAtual,
-} from '@/constants/Storage';
-import { HD } from '@/constants/theme';
-import { router } from 'expo-router';
-import { useState } from 'react';
+} from "@/constants/Storage";
+import { HD } from "@/constants/theme";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,29 +23,32 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function ImcScreen() {
-  const [altura,    setAltura]    = useState('');
-  const [peso,      setPeso]      = useState('');
+  const [altura, setAltura] = useState("");
+  const [peso, setPeso] = useState("");
   const [resultado, setResultado] = useState<number | null>(null);
-  const [classe,    setClasse]    = useState('');
-  const [loading,   setLoading]   = useState(false);
+  const [classe, setClasse] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function handleCalcular() {
-    const alturaNum = parseFloat(altura.replace(',', '.'));
-    const pesoNum   = parseFloat(peso.replace(',', '.'));
+    const alturaNum = parseFloat(altura.replace(",", "."));
+    const pesoNum = parseFloat(peso.replace(",", "."));
 
     if (!alturaNum || !pesoNum) {
-      Alert.alert('Atenção', 'Preencha altura e peso corretamente.');
+      Alert.alert("Atenção", "Preencha altura e peso corretamente.");
       return;
     }
     if (alturaNum < 50 || alturaNum > 250) {
-      Alert.alert('Atenção', 'Altura inválida. Digite em centímetros (ex: 175).');
+      Alert.alert(
+        "Atenção",
+        "Altura inválida. Digite em centímetros (ex: 175).",
+      );
       return;
     }
     if (pesoNum < 20 || pesoNum > 300) {
-      Alert.alert('Atenção', 'Peso inválido. Digite em quilogramas (ex: 70).');
+      Alert.alert("Atenção", "Peso inválido. Digite em quilogramas (ex: 70).");
       return;
     }
 
@@ -56,7 +59,7 @@ export default function ImcScreen() {
 
   async function handleEnviar() {
     if (!resultado) {
-      Alert.alert('Atenção', 'Calcule seu IMC primeiro.');
+      Alert.alert("Atenção", "Calcule seu IMC primeiro.");
       return;
     }
 
@@ -67,14 +70,14 @@ export default function ImcScreen() {
         await atualizarUsuario({
           ...user,
           altura: parseFloat(altura),
-          peso:   parseFloat(peso),
-          imc:    resultado,
+          peso: parseFloat(peso),
+          imc: resultado,
         });
       }
-      // ✅ Após IMC → vai para o questionário de perfil
-      router.replace('/(usuario)/questionario' as any);
+      // ✅ Após IMC → vai para o questionário de perfil (ainda dentro do onboarding)
+      router.replace("/(auth)/questionario" as any);
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível salvar os dados.');
+      Alert.alert("Erro", "Não foi possível salvar os dados.");
     } finally {
       setLoading(false);
     }
@@ -82,9 +85,9 @@ export default function ImcScreen() {
 
   function getImcColor(): string {
     if (!resultado) return HD.primary;
-    if (resultado < 18.5) return '#3B82F6';
-    if (resultado < 25)   return HD.primary;
-    if (resultado < 30)   return HD.secondary;
+    if (resultado < 18.5) return "#3B82F6";
+    if (resultado < 25) return HD.primary;
+    if (resultado < 30) return HD.secondary;
     return HD.accent;
   }
 
@@ -98,7 +101,10 @@ export default function ImcScreen() {
       <Text style={styles.title}>VAMOS CALCULAR SEU IMC</Text>
 
       {/* Card altura */}
-      <TouchableOpacity activeOpacity={1} style={[styles.card, styles.cardPrimary]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={[styles.card, styles.cardPrimary]}
+      >
         <Text style={styles.cardLabel}>QUAL A SUA ALTURA?</Text>
         <TextInput
           style={styles.cardInput}
@@ -108,7 +114,7 @@ export default function ImcScreen() {
           onChangeText={setAltura}
           keyboardType="numeric"
         />
-        {altura !== '' && (
+        {altura !== "" && (
           <View style={styles.checkBadge}>
             <Text style={styles.checkText}>✓</Text>
           </View>
@@ -116,7 +122,10 @@ export default function ImcScreen() {
       </TouchableOpacity>
 
       {/* Card peso */}
-      <TouchableOpacity activeOpacity={1} style={[styles.card, styles.cardSecondary]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={[styles.card, styles.cardSecondary]}
+      >
         <Text style={styles.cardLabelOrange}>QUAL O SEU PESO?</Text>
         <TextInput
           style={styles.cardInput}
@@ -132,27 +141,47 @@ export default function ImcScreen() {
       {resultado !== null && (
         <View style={[styles.resultCard, { borderColor: getImcColor() }]}>
           <Text style={styles.resultLabel}>Seu IMC</Text>
-          <Text style={[styles.resultValue, { color: getImcColor() }]}>{resultado}</Text>
-          <Text style={[styles.resultClasse, { color: getImcColor() }]}>{classe}</Text>
+          <Text style={[styles.resultValue, { color: getImcColor() }]}>
+            {resultado}
+          </Text>
+          <Text style={[styles.resultClasse, { color: getImcColor() }]}>
+            {classe}
+          </Text>
         </View>
       )}
 
       {/* Botões */}
       {resultado === null ? (
-        <TouchableOpacity style={styles.btnCalcular} onPress={handleCalcular} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.btnCalcular}
+          onPress={handleCalcular}
+          activeOpacity={0.8}
+        >
           <Text style={styles.btnText}>Calcular</Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity style={styles.btnEnviar} onPress={handleEnviar} activeOpacity={0.8} disabled={loading}>
-          {loading
-            ? <ActivityIndicator color={HD.textDark} />
-            : <Text style={styles.btnEnviarText}>Enviar</Text>
-          }
+        <TouchableOpacity
+          style={styles.btnEnviar}
+          onPress={handleEnviar}
+          activeOpacity={0.8}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={HD.textDark} />
+          ) : (
+            <Text style={styles.btnEnviarText}>Enviar</Text>
+          )}
         </TouchableOpacity>
       )}
 
       {resultado !== null && (
-        <TouchableOpacity onPress={() => { setResultado(null); setClasse(''); }} style={styles.recalcularBtn}>
+        <TouchableOpacity
+          onPress={() => {
+            setResultado(null);
+            setClasse("");
+          }}
+          style={styles.recalcularBtn}
+        >
           <Text style={styles.recalcularText}>Recalcular</Text>
         </TouchableOpacity>
       )}
@@ -170,38 +199,38 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: HD.background,
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 40,
   },
   title: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     color: HD.secondary,
     letterSpacing: 1,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 32,
   },
   card: {
-    width: '100%',
+    width: "100%",
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    position: 'relative',
+    position: "relative",
   },
-  cardPrimary:   { backgroundColor: HD.cardLight },
+  cardPrimary: { backgroundColor: HD.cardLight },
   cardSecondary: { backgroundColor: HD.secondaryLight },
   cardLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.primary,
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   cardLabelOrange: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.secondary,
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -214,57 +243,57 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   checkBadge: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 16,
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: HD.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  checkText: { color: HD.white, fontWeight: '700', fontSize: 14 },
+  checkText: { color: HD.white, fontWeight: "700", fontSize: 14 },
   resultCard: {
-    width: '100%',
+    width: "100%",
     borderRadius: 16,
     borderWidth: 2,
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     backgroundColor: HD.white,
   },
-  resultLabel:  { fontSize: 14, color: HD.textLight, marginBottom: 4 },
-  resultValue:  { fontSize: 48, fontWeight: '800' },
-  resultClasse: { fontSize: 16, fontWeight: '600', marginTop: 4 },
+  resultLabel: { fontSize: 14, color: HD.textLight, marginBottom: 4 },
+  resultValue: { fontSize: 48, fontWeight: "800" },
+  resultClasse: { fontSize: 16, fontWeight: "600", marginTop: 4 },
   btnCalcular: {
-    width: '100%',
-    backgroundColor: '#C8E26A',
+    width: "100%",
+    backgroundColor: "#C8E26A",
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
   },
-  btnText: { fontSize: 16, fontWeight: '700', color: HD.textDark },
+  btnText: { fontSize: 16, fontWeight: "700", color: HD.textDark },
   btnEnviar: {
-    width: '100%',
-    backgroundColor: '#C8E26A',
+    width: "100%",
+    backgroundColor: "#C8E26A",
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
   },
-  btnEnviarText: { fontSize: 16, fontWeight: '700', color: HD.textDark },
-  recalcularBtn:  { marginBottom: 24 },
-  recalcularText: { fontSize: 14, color: HD.primary, fontWeight: '600' },
+  btnEnviarText: { fontSize: 16, fontWeight: "700", color: HD.textDark },
+  recalcularBtn: { marginBottom: 24 },
+  recalcularText: { fontSize: 14, color: HD.primary, fontWeight: "600" },
   footer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
     gap: 8,
   },
   tagline: {
     fontSize: 14,
     color: HD.secondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

@@ -3,11 +3,11 @@
  * Tela de criação de conta.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
-import { cadastrarUsuario } from '@/constants/Storage';
-import { HD } from '@/constants/theme';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import LogoHealthDay from "@/components/LogoHealthDay";
+import { cadastrarUsuario } from "@/constants/Storage";
+import { HD } from "@/constants/theme";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,30 +18,30 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function CadastroScreen() {
-  const [nome,    setNome]    = useState('');
-  const [email,   setEmail]   = useState('');
-  const [senha,   setSenha]   = useState('');
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleCadastro() {
     if (!nome.trim() || !email.trim() || !senha.trim()) {
-      Alert.alert('Atenção', 'Preencha todos os campos.');
+      Alert.alert("Atenção", "Preencha todos os campos.");
       return;
     }
     if (senha.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 6 caracteres.');
+      Alert.alert("Atenção", "A senha deve ter no mínimo 6 caracteres.");
       return;
     }
     setLoading(true);
     try {
       await cadastrarUsuario({ nome, email, senha });
-      // Novo usuário → vai direto para o questionário
-      router.replace('/(usuario)/questionario');
+      // Novo usuário → primeiro calcula o IMC, depois vai para o questionário
+      router.replace("/(auth)/imc");
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível criar a conta.');
+      Alert.alert("Erro", "Não foi possível criar a conta.");
     } finally {
       setLoading(false);
     }
@@ -98,21 +98,22 @@ export default function CadastroScreen() {
           activeOpacity={0.8}
           disabled={loading}
         >
-          {loading
-            ? <ActivityIndicator color={HD.white} />
-            : <Text style={styles.btnText}>Criar Conta</Text>
-          }
+          {loading ? (
+            <ActivityIndicator color={HD.white} />
+          ) : (
+            <Text style={styles.btnText}>Criar Conta</Text>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.aviso}>
-          Seus dados são armazenados com segurança. Nunca envie senhas para terceiros.
+          Seus dados são armazenados com segurança. Nunca envie senhas para
+          terceiros.
         </Text>
       </View>
 
-      <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+      <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
         <Text style={styles.linkText}>
-          Já tem uma conta?{' '}
-          <Text style={styles.linkBold}>Fazer login</Text>
+          Já tem uma conta? <Text style={styles.linkBold}>Fazer login</Text>
         </Text>
       </TouchableOpacity>
 
@@ -125,21 +126,31 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: HD.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
-  logoContainer: { alignItems: 'center', marginBottom: 24 },
+  logoContainer: { alignItems: "center", marginBottom: 24 },
   card: {
-    width: '100%',
+    width: "100%",
     backgroundColor: HD.cardLight,
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
   },
-  cardTitle: { fontSize: 24, fontWeight: '700', color: HD.secondary, marginBottom: 20 },
-  label:     { fontSize: 14, color: HD.secondary, marginBottom: 6, fontWeight: '500' },
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: HD.secondary,
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    color: HD.secondary,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
   input: {
     borderWidth: 1.5,
     borderColor: HD.inputBorder,
@@ -155,13 +166,18 @@ const styles = StyleSheet.create({
     backgroundColor: HD.secondary,
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 4,
     marginBottom: 12,
   },
-  btnText: { color: HD.white, fontSize: 16, fontWeight: '700' },
-  aviso:   { fontSize: 11, color: HD.textLight, textAlign: 'center', lineHeight: 16 },
+  btnText: { color: HD.white, fontSize: 16, fontWeight: "700" },
+  aviso: {
+    fontSize: 11,
+    color: HD.textLight,
+    textAlign: "center",
+    lineHeight: 16,
+  },
   linkText: { fontSize: 14, color: HD.textMedium, marginBottom: 32 },
-  linkBold: { color: HD.primary, fontWeight: '700' },
-  tagline:  { fontSize: 15, color: HD.secondary, fontStyle: 'italic' },
+  linkBold: { color: HD.primary, fontWeight: "700" },
+  tagline: { fontSize: 15, color: HD.secondary, fontStyle: "italic" },
 });

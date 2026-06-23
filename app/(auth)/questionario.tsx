@@ -1,9 +1,10 @@
 /**
- * app/(usuario)/questionario.tsx
+ * app/(auth)/questionario.tsx
  * Questionário de perfil — 4 etapas para gerar dieta e treino automaticamente.
+ * Faz parte do fluxo de onboarding: cadastro → imc → questionario → home.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
+import LogoHealthDay from "@/components/LogoHealthDay";
 import {
     atualizarUsuario,
     gerarDietaAutomatica,
@@ -17,10 +18,10 @@ import {
     type NivelTreino,
     type RespostasQuestionario,
     type RestricaoAlimentar,
-} from '@/constants/Storage';
-import { HD } from '@/constants/theme';
-import { router } from 'expo-router';
-import { useState } from 'react';
+} from "@/constants/Storage";
+import { HD } from "@/constants/theme";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -31,12 +32,12 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-} from 'react-native';
+} from "react-native";
 
 // ─── Tipos locais ─────────────────────────────────────────────────────────────
 
-type Sexo = 'masculino' | 'feminino';
-type Objetivo = 'perda' | 'ganho' | 'manutencao';
+type Sexo = "masculino" | "feminino";
+type Objetivo = "perda" | "ganho" | "manutencao";
 
 // ─── Componente de opção selecionável ─────────────────────────────────────────
 
@@ -55,7 +56,9 @@ function Opcao({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.opcaoTexto, selecionado && styles.opcaoTextoSelecionado]}>
+      <Text
+        style={[styles.opcaoTexto, selecionado && styles.opcaoTextoSelecionado]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -69,22 +72,22 @@ export default function QuestionarioScreen() {
   const [loading, setLoading] = useState(false);
 
   // Etapa 1 — Dados físicos
-  const [peso, setPeso] = useState('');
-  const [altura, setAltura] = useState('');
-  const [idade, setIdade] = useState('');
-  const [sexo, setSexo] = useState<Sexo | ''>('');
+  const [peso, setPeso] = useState("");
+  const [altura, setAltura] = useState("");
+  const [idade, setIdade] = useState("");
+  const [sexo, setSexo] = useState<Sexo | "">("");
 
   // Etapa 2 — Objetivos
-  const [objetivo, setObjetivo] = useState<Objetivo | ''>('');
-  const [nivelAtividade, setNivelAtividade] = useState<NivelAtividade | ''>('');
+  const [objetivo, setObjetivo] = useState<Objetivo | "">("");
+  const [nivelAtividade, setNivelAtividade] = useState<NivelAtividade | "">("");
 
   // Etapa 3 — Alimentação
-  const [restricao, setRestricao] = useState<RestricaoAlimentar | ''>('');
+  const [restricao, setRestricao] = useState<RestricaoAlimentar | "">("");
   const [refeicoesPorDia, setRefeicoesPorDia] = useState<3 | 4 | 5 | 0>(0);
 
   // Etapa 4 — Treino
-  const [nivelTreino, setNivelTreino] = useState<NivelTreino | ''>('');
-  const [localTreino, setLocalTreino] = useState<LocalTreino | ''>('');
+  const [nivelTreino, setNivelTreino] = useState<NivelTreino | "">("");
+  const [localTreino, setLocalTreino] = useState<LocalTreino | "">("");
   const [diasTreino, setDiasTreino] = useState<number>(0);
 
   // ─── Validações por etapa ─────────────────────────────────────────────────
@@ -92,40 +95,40 @@ export default function QuestionarioScreen() {
   function validarEtapa(): boolean {
     if (etapa === 1) {
       if (!peso || !altura || !idade || !sexo) {
-        Alert.alert('Atenção', 'Preencha todos os campos.');
+        Alert.alert("Atenção", "Preencha todos os campos.");
         return false;
       }
       const p = parseFloat(peso);
       const a = parseFloat(altura);
       const i = parseInt(idade);
       if (isNaN(p) || p < 20 || p > 300) {
-        Alert.alert('Atenção', 'Peso inválido (20–300 kg).');
+        Alert.alert("Atenção", "Peso inválido (20–300 kg).");
         return false;
       }
       if (isNaN(a) || a < 100 || a > 250) {
-        Alert.alert('Atenção', 'Altura inválida (100–250 cm).');
+        Alert.alert("Atenção", "Altura inválida (100–250 cm).");
         return false;
       }
       if (isNaN(i) || i < 10 || i > 100) {
-        Alert.alert('Atenção', 'Idade inválida (10–100 anos).');
+        Alert.alert("Atenção", "Idade inválida (10–100 anos).");
         return false;
       }
     }
     if (etapa === 2) {
       if (!objetivo || !nivelAtividade) {
-        Alert.alert('Atenção', 'Selecione objetivo e nível de atividade.');
+        Alert.alert("Atenção", "Selecione objetivo e nível de atividade.");
         return false;
       }
     }
     if (etapa === 3) {
       if (!restricao || !refeicoesPorDia) {
-        Alert.alert('Atenção', 'Selecione restrição e número de refeições.');
+        Alert.alert("Atenção", "Selecione restrição e número de refeições.");
         return false;
       }
     }
     if (etapa === 4) {
       if (!nivelTreino || !localTreino || !diasTreino) {
-        Alert.alert('Atenção', 'Preencha todas as informações de treino.');
+        Alert.alert("Atenção", "Preencha todas as informações de treino.");
         return false;
       }
     }
@@ -145,7 +148,7 @@ export default function QuestionarioScreen() {
     try {
       const user = await getUserAtual();
       if (!user) {
-        Alert.alert('Erro', 'Usuário não encontrado.');
+        Alert.alert("Erro", "Usuário não encontrado.");
         return;
       }
 
@@ -182,9 +185,9 @@ export default function QuestionarioScreen() {
         questionarioFeito: true,
       });
 
-      router.replace('/(usuario)/home');
+      router.replace("/(usuario)/home");
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível salvar as respostas.');
+      Alert.alert("Erro", "Não foi possível salvar as respostas.");
     } finally {
       setLoading(false);
     }
@@ -207,7 +210,7 @@ export default function QuestionarioScreen() {
 
       {/* Barra de progresso */}
       <View style={styles.progressoContainer}>
-        {[1, 2, 3, 4].map(n => (
+        {[1, 2, 3, 4].map((n) => (
           <View
             key={n}
             style={[
@@ -256,8 +259,16 @@ export default function QuestionarioScreen() {
 
           <Text style={styles.label}>Sexo</Text>
           <View style={styles.opcoesRow}>
-            <Opcao label="Masculino" selecionado={sexo === 'masculino'} onPress={() => setSexo('masculino')} />
-            <Opcao label="Feminino"  selecionado={sexo === 'feminino'}  onPress={() => setSexo('feminino')}  />
+            <Opcao
+              label="Masculino"
+              selecionado={sexo === "masculino"}
+              onPress={() => setSexo("masculino")}
+            />
+            <Opcao
+              label="Feminino"
+              selecionado={sexo === "feminino"}
+              onPress={() => setSexo("feminino")}
+            />
           </View>
         </View>
       )}
@@ -269,17 +280,47 @@ export default function QuestionarioScreen() {
 
           <Text style={styles.label}>Objetivo principal</Text>
           <View style={styles.opcoesCol}>
-            <Opcao label="🔥 Perder peso"       selecionado={objetivo === 'perda'}      onPress={() => setObjetivo('perda')}      />
-            <Opcao label="💪 Ganhar massa"       selecionado={objetivo === 'ganho'}      onPress={() => setObjetivo('ganho')}      />
-            <Opcao label="⚖️ Manter o peso"     selecionado={objetivo === 'manutencao'} onPress={() => setObjetivo('manutencao')} />
+            <Opcao
+              label="🔥 Perder peso"
+              selecionado={objetivo === "perda"}
+              onPress={() => setObjetivo("perda")}
+            />
+            <Opcao
+              label="💪 Ganhar massa"
+              selecionado={objetivo === "ganho"}
+              onPress={() => setObjetivo("ganho")}
+            />
+            <Opcao
+              label="⚖️ Manter o peso"
+              selecionado={objetivo === "manutencao"}
+              onPress={() => setObjetivo("manutencao")}
+            />
           </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Nível de atividade física</Text>
+          <Text style={[styles.label, { marginTop: 16 }]}>
+            Nível de atividade física
+          </Text>
           <View style={styles.opcoesCol}>
-            <Opcao label="🛋️ Sedentário (pouco ou nenhum exercício)"  selecionado={nivelAtividade === 'sedentario'} onPress={() => setNivelAtividade('sedentario')} />
-            <Opcao label="🚶 Leve (1–3 dias por semana)"              selecionado={nivelAtividade === 'leve'}       onPress={() => setNivelAtividade('leve')}       />
-            <Opcao label="🏃 Moderado (3–5 dias por semana)"          selecionado={nivelAtividade === 'moderado'}   onPress={() => setNivelAtividade('moderado')}   />
-            <Opcao label="⚡ Intenso (6–7 dias por semana)"           selecionado={nivelAtividade === 'intenso'}    onPress={() => setNivelAtividade('intenso')}    />
+            <Opcao
+              label="🛋️ Sedentário (pouco ou nenhum exercício)"
+              selecionado={nivelAtividade === "sedentario"}
+              onPress={() => setNivelAtividade("sedentario")}
+            />
+            <Opcao
+              label="🚶 Leve (1–3 dias por semana)"
+              selecionado={nivelAtividade === "leve"}
+              onPress={() => setNivelAtividade("leve")}
+            />
+            <Opcao
+              label="🏃 Moderado (3–5 dias por semana)"
+              selecionado={nivelAtividade === "moderado"}
+              onPress={() => setNivelAtividade("moderado")}
+            />
+            <Opcao
+              label="⚡ Intenso (6–7 dias por semana)"
+              selecionado={nivelAtividade === "intenso"}
+              onPress={() => setNivelAtividade("intenso")}
+            />
           </View>
         </View>
       )}
@@ -291,18 +332,52 @@ export default function QuestionarioScreen() {
 
           <Text style={styles.label}>Restrição alimentar</Text>
           <View style={styles.opcoesCol}>
-            <Opcao label="✅ Nenhuma"            selecionado={restricao === 'nenhuma'}     onPress={() => setRestricao('nenhuma')}     />
-            <Opcao label="🥦 Vegetariano"        selecionado={restricao === 'vegetariano'} onPress={() => setRestricao('vegetariano')} />
-            <Opcao label="🌱 Vegano"             selecionado={restricao === 'vegano'}      onPress={() => setRestricao('vegano')}      />
-            <Opcao label="🌾 Sem glúten"         selecionado={restricao === 'semGluten'}   onPress={() => setRestricao('semGluten')}   />
-            <Opcao label="🥛 Sem lactose"        selecionado={restricao === 'semLactose'}  onPress={() => setRestricao('semLactose')}  />
+            <Opcao
+              label="✅ Nenhuma"
+              selecionado={restricao === "nenhuma"}
+              onPress={() => setRestricao("nenhuma")}
+            />
+            <Opcao
+              label="🥦 Vegetariano"
+              selecionado={restricao === "vegetariano"}
+              onPress={() => setRestricao("vegetariano")}
+            />
+            <Opcao
+              label="🌱 Vegano"
+              selecionado={restricao === "vegano"}
+              onPress={() => setRestricao("vegano")}
+            />
+            <Opcao
+              label="🌾 Sem glúten"
+              selecionado={restricao === "semGluten"}
+              onPress={() => setRestricao("semGluten")}
+            />
+            <Opcao
+              label="🥛 Sem lactose"
+              selecionado={restricao === "semLactose"}
+              onPress={() => setRestricao("semLactose")}
+            />
           </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Refeições por dia</Text>
+          <Text style={[styles.label, { marginTop: 16 }]}>
+            Refeições por dia
+          </Text>
           <View style={styles.opcoesRow}>
-            <Opcao label="3 refeições" selecionado={refeicoesPorDia === 3} onPress={() => setRefeicoesPorDia(3)} />
-            <Opcao label="4 refeições" selecionado={refeicoesPorDia === 4} onPress={() => setRefeicoesPorDia(4)} />
-            <Opcao label="5 refeições" selecionado={refeicoesPorDia === 5} onPress={() => setRefeicoesPorDia(5)} />
+            <Opcao
+              label="3 refeições"
+              selecionado={refeicoesPorDia === 3}
+              onPress={() => setRefeicoesPorDia(3)}
+            />
+            <Opcao
+              label="4 refeições"
+              selecionado={refeicoesPorDia === 4}
+              onPress={() => setRefeicoesPorDia(4)}
+            />
+            <Opcao
+              label="5 refeições"
+              selecionado={refeicoesPorDia === 5}
+              onPress={() => setRefeicoesPorDia(5)}
+            />
           </View>
         </View>
       )}
@@ -314,22 +389,53 @@ export default function QuestionarioScreen() {
 
           <Text style={styles.label}>Nível de experiência</Text>
           <View style={styles.opcoesCol}>
-            <Opcao label="🌱 Iniciante"      selecionado={nivelTreino === 'iniciante'}     onPress={() => setNivelTreino('iniciante')}     />
-            <Opcao label="💪 Intermediário"  selecionado={nivelTreino === 'intermediario'} onPress={() => setNivelTreino('intermediario')} />
-            <Opcao label="⚡ Avançado"       selecionado={nivelTreino === 'avancado'}      onPress={() => setNivelTreino('avancado')}      />
+            <Opcao
+              label="🌱 Iniciante"
+              selecionado={nivelTreino === "iniciante"}
+              onPress={() => setNivelTreino("iniciante")}
+            />
+            <Opcao
+              label="💪 Intermediário"
+              selecionado={nivelTreino === "intermediario"}
+              onPress={() => setNivelTreino("intermediario")}
+            />
+            <Opcao
+              label="⚡ Avançado"
+              selecionado={nivelTreino === "avancado"}
+              onPress={() => setNivelTreino("avancado")}
+            />
           </View>
 
           <Text style={[styles.label, { marginTop: 16 }]}>Local de treino</Text>
           <View style={styles.opcoesCol}>
-            <Opcao label="🏋️ Academia"    selecionado={localTreino === 'academia'}  onPress={() => setLocalTreino('academia')}  />
-            <Opcao label="🏠 Em casa"     selecionado={localTreino === 'casa'}      onPress={() => setLocalTreino('casa')}      />
-            <Opcao label="🌳 Ao ar livre" selecionado={localTreino === 'ar_livre'}  onPress={() => setLocalTreino('ar_livre')}  />
+            <Opcao
+              label="🏋️ Academia"
+              selecionado={localTreino === "academia"}
+              onPress={() => setLocalTreino("academia")}
+            />
+            <Opcao
+              label="🏠 Em casa"
+              selecionado={localTreino === "casa"}
+              onPress={() => setLocalTreino("casa")}
+            />
+            <Opcao
+              label="🌳 Ao ar livre"
+              selecionado={localTreino === "ar_livre"}
+              onPress={() => setLocalTreino("ar_livre")}
+            />
           </View>
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Dias de treino por semana</Text>
+          <Text style={[styles.label, { marginTop: 16 }]}>
+            Dias de treino por semana
+          </Text>
           <View style={styles.opcoesRow}>
-            {[2, 3, 4, 5].map(d => (
-              <Opcao key={d} label={`${d}x`} selecionado={diasTreino === d} onPress={() => setDiasTreino(d)} />
+            {[2, 3, 4, 5].map((d) => (
+              <Opcao
+                key={d}
+                label={`${d}x`}
+                selecionado={diasTreino === d}
+                onPress={() => setDiasTreino(d)}
+              />
             ))}
           </View>
         </View>
@@ -357,7 +463,7 @@ export default function QuestionarioScreen() {
             <ActivityIndicator color={HD.white} />
           ) : (
             <Text style={styles.btnAvancarTexto}>
-              {etapa === 4 ? '✓ Gerar meu plano' : 'Próximo →'}
+              {etapa === 4 ? "✓ Gerar meu plano" : "Próximo →"}
             </Text>
           )}
         </TouchableOpacity>
@@ -381,20 +487,20 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     marginBottom: 24,
   },
   headerTitulo: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.secondary,
   },
 
   // Progresso
   progressoContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 6,
   },
@@ -422,7 +528,7 @@ const styles = StyleSheet.create({
   },
   cardTitulo: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.secondary,
     marginBottom: 16,
   },
@@ -430,7 +536,7 @@ const styles = StyleSheet.create({
   // Inputs
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: HD.secondary,
     marginBottom: 8,
   },
@@ -448,8 +554,8 @@ const styles = StyleSheet.create({
 
   // Opções
   opcoesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginBottom: 4,
   },
@@ -472,16 +578,16 @@ const styles = StyleSheet.create({
   opcaoTexto: {
     fontSize: 14,
     color: HD.textMedium,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   opcaoTextoSelecionado: {
     color: HD.white,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   // Botões
   botoesRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginBottom: 24,
   },
@@ -491,11 +597,11 @@ const styles = StyleSheet.create({
     borderColor: HD.inputBorder,
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   btnVoltarTexto: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: HD.textMedium,
   },
   btnAvancar: {
@@ -503,18 +609,18 @@ const styles = StyleSheet.create({
     backgroundColor: HD.secondary,
     borderRadius: 30,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   btnAvancarTexto: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: HD.white,
   },
 
   tagline: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 14,
     color: HD.secondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

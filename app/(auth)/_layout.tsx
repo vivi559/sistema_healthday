@@ -4,7 +4,7 @@
  * Usa Stack simples sem header; cada tela controla sua própria UI.
  */
 
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
   return (
@@ -13,6 +13,7 @@ export default function AuthLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="cadastro" />
       <Stack.Screen name="imc" />
+      <Stack.Screen name="questionario" />
     </Stack>
   );
 }
