@@ -132,8 +132,12 @@ export interface Lembrete {
 export interface Noticia {
   id: string;
   titulo: string;
+  descricao: string;
   imagem: string;
   categoria: 'alimentacao' | 'exercicio' | 'saude';
+  autorId: string;
+  autorNome: string;
+  criadaEm: string;
 }
 
 // ─── Chaves do AsyncStorage ───────────────────────────────────────────────────
@@ -147,6 +151,7 @@ const KEYS = {
   TEMA:            '@healthday:tema',
   QUESTIONARIOS:   '@healthday:questionarios',
   SOLICITACOES:    '@healthday:solicitacoes',
+  NOTICIAS:        '@healthday:noticias',
 };
 
 // ─── Dados iniciais (seed) ────────────────────────────────────────────────────
@@ -313,20 +318,32 @@ const noticiasSeed: Noticia[] = [
   {
     id: 'n1',
     titulo: 'Ultraprocessados induzem jovens a comer mesmo sem sentir fome, aponta estudo.',
+    descricao: 'Uma pesquisa publicada no periódico Cell Metabolism revelou que alimentos ultraprocessados afetam os circuitos cerebrais de recompensa, fazendo jovens continuarem comendo mesmo após se sentirem saciados. O estudo acompanhou adolescentes por 6 meses e identificou que o consumo frequente desses alimentos reduz a sensibilidade dos receptores de dopamina, criando um ciclo de compulsão alimentar. Nutricionistas recomendam substituir esses alimentos por opções in natura e priorizar refeições feitas em casa.',
     imagem: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
     categoria: 'alimentacao',
+    autorId: 'seed',
+    autorNome: 'Equipe Health Day',
+    criadaEm: '2025-01-10',
   },
   {
     id: 'n2',
     titulo: 'OMS indica até 300 minutos de atividade física semanal; relembre benefícios do exercício.',
+    descricao: 'A Organização Mundial da Saúde (OMS) recomenda que adultos pratiquem entre 150 e 300 minutos de atividade física moderada por semana, ou 75 a 150 minutos de atividade intensa. Entre os benefícios comprovados estão a redução do risco de doenças cardíacas, diabetes tipo 2, alguns tipos de câncer e depressão. Mesmo pequenas quantidades de movimento já trazem benefícios: uma caminhada de 30 minutos por dia já representa uma mudança significativa para quem é sedentário.',
     imagem: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
     categoria: 'exercicio',
+    autorId: 'seed',
+    autorNome: 'Equipe Health Day',
+    criadaEm: '2025-01-15',
   },
   {
     id: 'n3',
     titulo: 'Alerta nutricional em embalagens pode prevenir obesidade, aponta estudo.',
+    descricao: 'Pesquisadores da Universidade de São Paulo (USP) demonstraram que rótulos de advertência em embalagens de alimentos com alto teor de açúcar, sódio e gorduras saturadas reduziram em até 24% a intenção de compra desses produtos entre consumidores brasileiros. O sistema de rotulagem frontal, implementado no Brasil em 2022, foi avaliado positivamente por especialistas como uma das políticas públicas mais eficazes no combate à obesidade e às doenças crônicas não transmissíveis.',
     imagem: 'https://images.unsplash.com/photo-1576402187878-974f70c890a5?w=400',
     categoria: 'saude',
+    autorId: 'seed',
+    autorNome: 'Equipe Health Day',
+    criadaEm: '2025-01-20',
   },
 ];
 
@@ -345,6 +362,10 @@ export async function inicializarStorage(): Promise<void> {
     const treinosExistentes = await AsyncStorage.getItem(KEYS.TREINOS);
     if (!treinosExistentes)
       await AsyncStorage.setItem(KEYS.TREINOS, JSON.stringify(treinosSeed));
+
+    const noticiasExistentes = await AsyncStorage.getItem(KEYS.NOTICIAS);
+    if (!noticiasExistentes)
+      await AsyncStorage.setItem(KEYS.NOTICIAS, JSON.stringify(noticiasSeed));
   } catch (e) {
     console.error('Erro ao inicializar storage:', e);
   }
@@ -789,8 +810,32 @@ export function classificarIMC(imc: number): string {
 
 // ─── Notícias ─────────────────────────────────────────────────────────────────
 
-export function getNoticias(): Noticia[] {
-  return noticiasSeed;
+export async function getNoticias(): Promise<Noticia[]> {
+  const data = await AsyncStorage.getItem(KEYS.NOTICIAS);
+  return data ? JSON.parse(data) : noticiasSeed;
+}
+
+export async function criarNoticia(noticia: Omit<Noticia, 'id' | 'criadaEm'>): Promise<Noticia> {
+  const todas = await getNoticias();
+  const nova: Noticia = {
+    ...noticia,
+    id: 'n' + Date.now(),
+    criadaEm: new Date().toISOString().split('T')[0],
+  };
+  await AsyncStorage.setItem(KEYS.NOTICIAS, JSON.stringify([nova, ...todas]));
+  return nova;
+}
+
+export async function atualizarNoticia(atualizada: Noticia): Promise<void> {
+  const todas = await getNoticias();
+  const novas = todas.map(n => n.id === atualizada.id ? atualizada : n);
+  await AsyncStorage.setItem(KEYS.NOTICIAS, JSON.stringify(novas));
+}
+
+export async function deletarNoticia(id: string): Promise<void> {
+  const todas = await getNoticias();
+  const novas = todas.filter(n => n.id !== id);
+  await AsyncStorage.setItem(KEYS.NOTICIAS, JSON.stringify(novas));
 }
 
 // ─── Tema ─────────────────────────────────────────────────────────────────────
