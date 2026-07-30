@@ -41,7 +41,7 @@ export default function DietaScreen() {
   const [tela, setTela] = useState<Tela>("dieta");
   const [dieta, setDieta] = useState<Dieta | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandidos, setExpandidos] = useState<string[]>(["Janta"]);
+  const [expandidos, setExpandidos] = useState<string[]>([]);
   const [busca, setBusca] = useState("");
   const [refeicaoAtual, setRefeicaoAtual] = useState<string>("");
   const [userId, setUserId] = useState("");
@@ -74,9 +74,9 @@ export default function DietaScreen() {
     carregar();
   }, []);
 
-  function toggleRefeicao(tipo: string) {
+  function toggleRefeicao(chave: string) {
     setExpandidos((prev) =>
-      prev.includes(tipo) ? prev.filter((t) => t !== tipo) : [...prev, tipo],
+      prev.includes(chave) ? prev.filter((t) => t !== chave) : [...prev, chave],
     );
   }
 
@@ -430,17 +430,18 @@ export default function DietaScreen() {
             </View>
 
             {/* Refeições */}
-            {dieta.refeicoes.map((refeicao) => {
-              const isExpanded = expandidos.includes(refeicao.tipo);
+            {dieta.refeicoes.map((refeicao, refeicaoIdx) => {
+              const chave = `${refeicao.tipo}-${refeicaoIdx}`;
+              const isExpanded = expandidos.includes(chave);
               const kcal = calcKcalRefeicao(refeicao);
               return (
                 <View
-                  key={refeicao.tipo}
+                  key={chave}
                   style={[styles.refeicaoCard, { backgroundColor: tema.card }]}
                 >
                   <TouchableOpacity
                     style={styles.refeicaoHeader}
-                    onPress={() => toggleRefeicao(refeicao.tipo)}
+                    onPress={() => toggleRefeicao(chave)}
                     activeOpacity={0.7}
                   >
                     <View style={styles.refeicaoHeaderLeft}>
