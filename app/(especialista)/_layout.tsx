@@ -31,6 +31,14 @@ function IconSolicitacoes({ focused }: { focused: boolean }) {
   );
 }
 
+function IconNoticias({ focused }: { focused: boolean }) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Text style={styles.iconEmoji}>📰</Text>
+    </View>
+  );
+}
+
 function IconPerfil({ focused }: { focused: boolean }) {
   return (
     <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
@@ -70,6 +78,13 @@ export default function EspecialistaLayout() {
         options={{
           title: "Solicitações",
           tabBarIcon: ({ focused }) => <IconSolicitacoes focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="noticias"
+        options={{
+          title: "Notícias",
+          tabBarIcon: ({ focused }) => <IconNoticias focused={focused} />,
         }}
       />
       <Tabs.Screen
