@@ -1,19 +1,17 @@
 /**
- * app/(admin)/_layout.tsx
- * Tab bar do painel de administrador — dashboard, usuários, especialistas, relatórios, perfil.
+ * app/(especialista)/_layout.tsx
+ * Tab bar do especialista — treinos, dieta, solicitações.
  */
 
-import { HD } from '@/constants/theme';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import type { ComponentProps } from 'react';
-import {
-  Platform,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { HD } from "@/constants/theme";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import type { ComponentProps } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 
-type IconName = ComponentProps<typeof MaterialIcons>['name'];
+type IconName = ComponentProps<typeof MaterialIcons>["name"];
+
+// ─── Ícone da tab (Material Icons) ────────────────────────────────────────────
 
 function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
   return (
@@ -23,7 +21,7 @@ function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
   );
 }
 
-export default function AdminLayout() {
+export default function EspecialistaLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -32,43 +30,41 @@ export default function AdminLayout() {
         tabBarActiveTintColor: HD.white,
         tabBarInactiveTintColor: HD.white,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarBackground: () => (
-          <View style={styles.tabBarBackground} />
-        ),
+        tabBarBackground: () => <View style={styles.tabBarBackground} />,
       }}
     >
       <Tabs.Screen
-        name="dashboard"
+        name="treinos"
         options={{
-          title: 'dashboard',
-          tabBarIcon: ({ focused }) => <TabIcon name="dashboard" focused={focused} />,
+          title: "Treinos",
+          tabBarIcon: ({ focused }) => <TabIcon name="fitness-center" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="usuarios"
+        name="dieta"
         options={{
-          title: 'usuários',
-          tabBarIcon: ({ focused }) => <TabIcon name="group" focused={focused} />,
+          title: "Dieta",
+          tabBarIcon: ({ focused }) => <TabIcon name="restaurant" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="especialista"
+        name="solicitacoes"
         options={{
-          title: 'especialistas',
-          tabBarIcon: ({ focused }) => <TabIcon name="medical-services" focused={focused} />,
+          title: "Solicitações",
+          tabBarIcon: ({ focused }) => <TabIcon name="assignment" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="relatorios"
+        name="noticias"
         options={{
-          title: 'relatórios',
-          tabBarIcon: ({ focused }) => <TabIcon name="assessment" focused={focused} />,
+          title: "Notícias",
+          tabBarIcon: ({ focused }) => <TabIcon name="article" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
-          title: 'perfil',
+          title: "Perfil",
           tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} />,
         }}
       />
@@ -78,7 +74,7 @@ export default function AdminLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 24,
     right: 24,
@@ -91,7 +87,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 0,
+    paddingBottom: Platform.OS === "ios" ? 8 : 0,
   },
   tabBarBackground: {
     flex: 1,
@@ -102,15 +98,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   iconWrapActive: {
     backgroundColor: HD.primary,
   },
   tabLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     color: HD.white,
     marginTop: -4,
   },

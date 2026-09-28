@@ -13,8 +13,9 @@ import {
 } from '@/constants/Storage';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
+import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,31 +30,33 @@ import {
   View,
 } from 'react-native';
 
+type IconName = ComponentProps<typeof MaterialIcons>['name'];
+
 type MenuItem = {
   id: string;
-  icone: string;
+  icone: IconName;
   label: string;
 };
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: 'info',        icone: '👤', label: 'Informações do perfil'   },
-  { id: 'pacientes',   icone: '🩺', label: 'Meus pacientes'          },
-  { id: 'idioma',      icone: '🌐', label: 'Idioma'                   },
-  { id: 'privacidade', icone: '🔒', label: 'Privacidade e Segurança'  },
+  { id: 'info', icone: 'person-outline', label: 'Informações do perfil' },
+  { id: 'pacientes', icone: 'groups', label: 'Meus pacientes' },
+  { id: 'idioma', icone: 'language', label: 'Idioma' },
+  { id: 'privacidade', icone: 'lock-outline', label: 'Privacidade e Segurança' },
 ];
 
 export default function PerfilEspecialistaScreen() {
   const { temaDark, setTemaDark } = useTema();
   const tema = temaDark ? darkTheme : lightTheme;
 
-  const [user,      setUser]      = useState<User | null>(null);
-  const [loading,   setLoading]   = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState(false);
 
-  const [nomeEdit,       setNomeEdit]       = useState('');
-  const [especialidade,  setEspecialidade]  = useState('');
-  const [cidadeEdit,     setCidadeEdit]     = useState('');
-  const [saving,         setSaving]         = useState(false);
+  const [nomeEdit, setNomeEdit] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
+  const [cidadeEdit, setCidadeEdit] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function carregar() {
@@ -83,7 +86,7 @@ export default function PerfilEspecialistaScreen() {
       await atualizarUsuario(atualizado as User);
       setUser(atualizado as User);
       setModalInfo(false);
-      Alert.alert('✅ Salvo!', 'Informações atualizadas com sucesso.');
+      Alert.alert('Salvo!', 'Informações atualizadas com sucesso.');
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar.');
     } finally {
@@ -135,7 +138,7 @@ export default function PerfilEspecialistaScreen() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
 
@@ -145,7 +148,7 @@ export default function PerfilEspecialistaScreen() {
         </View>
 
         <TouchableOpacity style={styles.menuBtn} onPress={handleLogout}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
@@ -157,19 +160,19 @@ export default function PerfilEspecialistaScreen() {
         <View style={[styles.perfilCard, { backgroundColor: tema.card }]}>
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarEmoji}>🩺</Text>
+              <MaterialIcons name="person" size={52} color={HD.textLight} />
             </View>
           </View>
 
-          <Text style={[styles.userId,    { color: tema.subtext }]}>id:{user?.id}</Text>
-          <Text style={[styles.userName,  { color: tema.text    }]}>{user?.nome}</Text>
+          <Text style={[styles.userId, { color: tema.subtext }]}>id:{user?.id}</Text>
+          <Text style={[styles.userName, { color: tema.text }]}>{user?.nome}</Text>
           <Text style={[styles.userLocal, { color: tema.subtext }]}>
             {[user?.cidade, user?.estado, user?.pais].filter(Boolean).join(', ')}
           </Text>
 
           <View style={styles.badgeRow}>
             <View style={styles.especialistaBadge}>
-              <Text style={styles.especialistaTxt}>⭐ Especialista</Text>
+              <Text style={styles.especialistaTxt}>Especialista</Text>
             </View>
           </View>
         </View>
@@ -190,10 +193,10 @@ export default function PerfilEspecialistaScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <Text style={styles.menuItemIcone}>{item.icone}</Text>
+                <MaterialIcons name={item.icone} size={22} color={HD.primary} />
                 <Text style={[styles.menuItemLabel, { color: tema.text }]}>{item.label}</Text>
               </View>
-              <Text style={[styles.menuChevron, { color: tema.subtext }]}>›</Text>
+              <MaterialIcons name="chevron-right" size={22} color={tema.subtext} />
             </TouchableOpacity>
           ))}
         </View>
@@ -217,7 +220,7 @@ export default function PerfilEspecialistaScreen() {
           onPress={handleLogout}
           activeOpacity={0.8}
         >
-          <Text style={styles.logoutTxt}>🚪 Sair da conta</Text>
+          <Text style={styles.logoutTxt}>Sair da conta</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -235,7 +238,7 @@ export default function PerfilEspecialistaScreen() {
             <View style={styles.modalHeaderRow}>
               <Text style={[styles.modalTitulo, { color: tema.text }]}>Informações do Perfil</Text>
               <TouchableOpacity onPress={() => setModalInfo(false)}>
-                <Text style={[styles.modalFechar, { color: tema.subtext }]}>✕</Text>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
               </TouchableOpacity>
             </View>
 
@@ -285,7 +288,7 @@ export default function PerfilEspecialistaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:        { flex: 1 },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
@@ -301,7 +304,6 @@ const styles = StyleSheet.create({
     width: 40, height: 40,
     alignItems: 'center', justifyContent: 'center',
   },
-  notifIcon:  { fontSize: 22 },
   notifBadge: {
     position: 'absolute',
     top: 6, right: 6,
@@ -315,8 +317,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: HD.primary,
   },
-  menuBtn:  { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  menuIcon: { fontSize: 22, color: HD.primary },
+  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
@@ -338,11 +339,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: HD.primary,
   },
-  avatarEmoji: { fontSize: 44 },
-  userId:    { fontSize: 12, marginBottom: 4 },
-  userName:  { fontSize: 24, fontWeight: '800', marginBottom: 4 },
+  userId: { fontSize: 12, marginBottom: 4 },
+  userName: { fontSize: 24, fontWeight: '800', marginBottom: 4 },
   userLocal: { fontSize: 14, marginBottom: 12 },
-  badgeRow:  { flexDirection: 'row', gap: 8 },
+  badgeRow: { flexDirection: 'row', gap: 8 },
   especialistaBadge: {
     backgroundColor: HD.primaryLight,
     borderRadius: 20,
@@ -365,10 +365,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 18,
   },
-  menuItemLeft:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  menuItemIcone: { fontSize: 20 },
+  menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   menuItemLabel: { fontSize: 15, fontWeight: '500' },
-  menuChevron:   { fontSize: 22, fontWeight: '600' },
 
   bottomCard: {
     borderRadius: 20,
@@ -379,7 +377,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
-  temaRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  temaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   temaLabel: { fontSize: 14, fontWeight: '600' },
 
   logoutBtn: {
@@ -414,8 +412,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitulo: { fontSize: 18, fontWeight: '800' },
-  modalFechar: { fontSize: 20, fontWeight: '700' },
-  inputLabel:  { fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  inputLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
   input: {
     borderWidth: 1.5,
     borderRadius: 10,
