@@ -225,7 +225,7 @@ export default function QuestionarioScreen() {
       {/* ── Etapa 1: Dados físicos ── */}
       {etapa === 1 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>📏 Seus dados físicos</Text>
+          <Text style={styles.cardTitulo}>Seus dados físicos</Text>
 
           <Text style={styles.label}>Peso (kg)</Text>
           <TextInput
@@ -276,22 +276,22 @@ export default function QuestionarioScreen() {
       {/* ── Etapa 2: Objetivos ── */}
       {etapa === 2 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>🎯 Seus objetivos</Text>
+          <Text style={styles.cardTitulo}>Seus objetivos</Text>
 
           <Text style={styles.label}>Objetivo principal</Text>
           <View style={styles.opcoesCol}>
             <Opcao
-              label="🔥 Perder peso"
+              label="Perder peso"
               selecionado={objetivo === "perda"}
               onPress={() => setObjetivo("perda")}
             />
             <Opcao
-              label="💪 Ganhar massa"
+              label="Ganhar massa"
               selecionado={objetivo === "ganho"}
               onPress={() => setObjetivo("ganho")}
             />
             <Opcao
-              label="⚖️ Manter o peso"
+              label="Manter o peso"
               selecionado={objetivo === "manutencao"}
               onPress={() => setObjetivo("manutencao")}
             />
@@ -302,22 +302,22 @@ export default function QuestionarioScreen() {
           </Text>
           <View style={styles.opcoesCol}>
             <Opcao
-              label="🛋️ Sedentário (pouco ou nenhum exercício)"
+              label="Sedentário (pouco ou nenhum exercício)"
               selecionado={nivelAtividade === "sedentario"}
               onPress={() => setNivelAtividade("sedentario")}
             />
             <Opcao
-              label="🚶 Leve (1–3 dias por semana)"
+              label="Leve (1–3 dias por semana)"
               selecionado={nivelAtividade === "leve"}
               onPress={() => setNivelAtividade("leve")}
             />
             <Opcao
-              label="🏃 Moderado (3–5 dias por semana)"
+              label="Moderado (3–5 dias por semana)"
               selecionado={nivelAtividade === "moderado"}
               onPress={() => setNivelAtividade("moderado")}
             />
             <Opcao
-              label="⚡ Intenso (6–7 dias por semana)"
+              label="Intenso (6–7 dias por semana)"
               selecionado={nivelAtividade === "intenso"}
               onPress={() => setNivelAtividade("intenso")}
             />
@@ -328,32 +328,32 @@ export default function QuestionarioScreen() {
       {/* ── Etapa 3: Alimentação ── */}
       {etapa === 3 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>🥗 Sua alimentação</Text>
+          <Text style={styles.cardTitulo}>Sua alimentação</Text>
 
           <Text style={styles.label}>Restrição alimentar</Text>
           <View style={styles.opcoesCol}>
             <Opcao
-              label="✅ Nenhuma"
+              label="Nenhuma"
               selecionado={restricao === "nenhuma"}
               onPress={() => setRestricao("nenhuma")}
             />
             <Opcao
-              label="🥦 Vegetariano"
+              label="Vegetariano"
               selecionado={restricao === "vegetariano"}
               onPress={() => setRestricao("vegetariano")}
             />
             <Opcao
-              label="🌱 Vegano"
+              label="Vegano"
               selecionado={restricao === "vegano"}
               onPress={() => setRestricao("vegano")}
             />
             <Opcao
-              label="🌾 Sem glúten"
+              label="Sem glúten"
               selecionado={restricao === "semGluten"}
               onPress={() => setRestricao("semGluten")}
             />
             <Opcao
-              label="🥛 Sem lactose"
+              label="Sem lactose"
               selecionado={restricao === "semLactose"}
               onPress={() => setRestricao("semLactose")}
             />
@@ -385,22 +385,22 @@ export default function QuestionarioScreen() {
       {/* ── Etapa 4: Treino ── */}
       {etapa === 4 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>🏋️ Seu treino</Text>
+          <Text style={styles.cardTitulo}>Seu treino</Text>
 
           <Text style={styles.label}>Nível de experiência</Text>
           <View style={styles.opcoesCol}>
             <Opcao
-              label="🌱 Iniciante"
+              label="Iniciante"
               selecionado={nivelTreino === "iniciante"}
               onPress={() => setNivelTreino("iniciante")}
             />
             <Opcao
-              label="💪 Intermediário"
+              label="Intermediário"
               selecionado={nivelTreino === "intermediario"}
               onPress={() => setNivelTreino("intermediario")}
             />
             <Opcao
-              label="⚡ Avançado"
+              label="Avançado"
               selecionado={nivelTreino === "avancado"}
               onPress={() => setNivelTreino("avancado")}
             />
@@ -409,17 +409,17 @@ export default function QuestionarioScreen() {
           <Text style={[styles.label, { marginTop: 16 }]}>Local de treino</Text>
           <View style={styles.opcoesCol}>
             <Opcao
-              label="🏋️ Academia"
+              label="Academia"
               selecionado={localTreino === "academia"}
               onPress={() => setLocalTreino("academia")}
             />
             <Opcao
-              label="🏠 Em casa"
+              label="Em casa"
               selecionado={localTreino === "casa"}
               onPress={() => setLocalTreino("casa")}
             />
             <Opcao
-              label="🌳 Ao ar livre"
+              label="Ao ar livre"
               selecionado={localTreino === "ar_livre"}
               onPress={() => setLocalTreino("ar_livre")}
             />
@@ -449,7 +449,7 @@ export default function QuestionarioScreen() {
             onPress={() => setEtapa(etapa - 1)}
             activeOpacity={0.8}
           >
-            <Text style={styles.btnVoltarTexto}>← Voltar</Text>
+            <Text style={styles.btnVoltarTexto}>Voltar</Text>
           </TouchableOpacity>
         )}
 
@@ -463,7 +463,7 @@ export default function QuestionarioScreen() {
             <ActivityIndicator color={HD.white} />
           ) : (
             <Text style={styles.btnAvancarTexto}>
-              {etapa === 4 ? "✓ Gerar meu plano" : "Próximo →"}
+              {etapa === 4 ? "Gerar meu plano" : "Próximo"}
             </Text>
           )}
         </TouchableOpacity>

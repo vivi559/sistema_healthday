@@ -11,6 +11,7 @@ import {
   getUserAtual,
 } from "@/constants/Storage";
 import { HD } from "@/constants/theme";
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -74,7 +75,7 @@ export default function ImcScreen() {
           imc: resultado,
         });
       }
-      // ✅ Após IMC → vai para o questionário de perfil (ainda dentro do onboarding)
+      // Após IMC → vai para o questionário de perfil (ainda dentro do onboarding)
       router.replace("/(auth)/questionario" as any);
     } catch (e) {
       Alert.alert("Erro", "Não foi possível salvar os dados.");
@@ -116,7 +117,7 @@ export default function ImcScreen() {
         />
         {altura !== "" && (
           <View style={styles.checkBadge}>
-            <Text style={styles.checkText}>✓</Text>
+            <MaterialIcons name="check" size={18} color={HD.white} />
           </View>
         )}
       </TouchableOpacity>
@@ -253,7 +254,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  checkText: { color: HD.white, fontWeight: "700", fontSize: 14 },
   resultCard: {
     width: "100%",
     borderRadius: 16,

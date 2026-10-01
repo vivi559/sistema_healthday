@@ -13,8 +13,9 @@ import {
 } from "@/constants/Storage";
 import { HD, darkTheme, lightTheme } from "@/constants/theme";
 import { useTema } from "@/context/TemaContext";
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,17 +30,19 @@ import {
   View,
 } from "react-native";
 
+type IconName = ComponentProps<typeof MaterialIcons>["name"];
+
 type MenuItem = {
   id: string;
-  icone: string;
+  icone: IconName;
   label: string;
 };
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: "info", icone: "👤", label: "Informações do perfil" },
-  { id: "historico", icone: "📋", label: "Histórico de progressão" },
-  { id: "idioma", icone: "🌐", label: "Idioma" },
-  { id: "privacidade", icone: "🔒", label: "Privacidade e Segurança" },
+  { id: "info", icone: "person-outline", label: "Informações do perfil" },
+  { id: "historico", icone: "history", label: "Histórico de progressão" },
+  { id: "idioma", icone: "language", label: "Idioma" },
+  { id: "privacidade", icone: "lock-outline", label: "Privacidade e Segurança" },
 ];
 
 export default function PerfilScreen() {
@@ -90,7 +93,7 @@ export default function PerfilScreen() {
       await atualizarUsuario(atualizado);
       setUser(atualizado);
       setModalInfo(false);
-      Alert.alert("✅ Salvo!", "Informações atualizadas com sucesso.");
+      Alert.alert("Salvo!", "Informações atualizadas com sucesso.");
     } catch {
       Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
@@ -129,7 +132,7 @@ export default function PerfilScreen() {
 
   function handleSerProfissional() {
     Alert.alert(
-      "🩺 Seja um Profissional",
+      "Seja um Profissional",
       "Para se tornar um especialista no Health Day, entre em contato com o administrador.",
       [{ text: "OK" }],
     );
@@ -155,7 +158,7 @@ export default function PerfilScreen() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
 
@@ -166,7 +169,7 @@ export default function PerfilScreen() {
         </View>
 
         <TouchableOpacity style={styles.menuBtn} onPress={handleLogout}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
@@ -178,7 +181,7 @@ export default function PerfilScreen() {
         <View style={[styles.perfilCard, { backgroundColor: tema.card }]}>
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarEmoji}>👤</Text>
+              <MaterialIcons name="person" size={52} color={HD.textLight} />
             </View>
           </View>
 
@@ -217,14 +220,12 @@ export default function PerfilScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <Text style={styles.menuItemIcone}>{item.icone}</Text>
+                <MaterialIcons name={item.icone} size={22} color={HD.primary} />
                 <Text style={[styles.menuItemLabel, { color: tema.text }]}>
                   {item.label}
                 </Text>
               </View>
-              <Text style={[styles.menuChevron, { color: tema.subtext }]}>
-                ›
-              </Text>
+              <MaterialIcons name="chevron-right" size={22} color={tema.subtext} />
             </TouchableOpacity>
           ))}
         </View>
@@ -250,7 +251,7 @@ export default function PerfilScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.profIcone}>
-                <Text style={styles.profIconeTxt}>＋</Text>
+                <MaterialIcons name="add" size={26} color={HD.white} />
               </View>
               <Text style={[styles.profLabel, { color: tema.text }]}>
                 Seja um{"\n"}Profissional
@@ -265,7 +266,7 @@ export default function PerfilScreen() {
           onPress={handleLogout}
           activeOpacity={0.8}
         >
-          <Text style={styles.logoutTxt}>🚪 Sair da conta</Text>
+          <Text style={styles.logoutTxt}>Sair da conta</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -283,9 +284,7 @@ export default function PerfilScreen() {
                 Informações do Perfil
               </Text>
               <TouchableOpacity onPress={() => setModalInfo(false)}>
-                <Text style={[styles.modalFechar, { color: tema.subtext }]}>
-                  ✕
-                </Text>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
               </TouchableOpacity>
             </View>
 
@@ -427,7 +426,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  notifIcon: { fontSize: 22 },
   notifBadge: {
     position: "absolute",
     top: 6,
@@ -449,7 +447,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuIcon: { fontSize: 22, color: HD.primary },
 
   // Scroll
   scrollContent: {
@@ -481,7 +478,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: HD.primary,
   },
-  avatarEmoji: { fontSize: 44 },
   userId: { fontSize: 12, marginBottom: 4 },
   userName: { fontSize: 24, fontWeight: "800", marginBottom: 4 },
   userLocal: { fontSize: 14, marginBottom: 12 },
@@ -511,9 +507,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   menuItemLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-  menuItemIcone: { fontSize: 20 },
   menuItemLabel: { fontSize: 15, fontWeight: "500" },
-  menuChevron: { fontSize: 22, fontWeight: "600" },
 
   // Card tema + profissional
   bottomCard: {
@@ -540,12 +534,6 @@ const styles = StyleSheet.create({
     backgroundColor: HD.textDark,
     alignItems: "center",
     justifyContent: "center",
-  },
-  profIconeTxt: {
-    color: HD.white,
-    fontSize: 24,
-    fontWeight: "700",
-    lineHeight: 30,
   },
   profLabel: { fontSize: 13, fontWeight: "600", textAlign: "center" },
 
@@ -583,7 +571,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitulo: { fontSize: 18, fontWeight: "800" },
-  modalFechar: { fontSize: 20, fontWeight: "700" },
   inputLabel: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
   input: {
     borderWidth: 1.5,

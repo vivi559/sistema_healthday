@@ -3,6 +3,7 @@
  * Tela de aprovação e gerenciamento de especialistas.
  */
 
+import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   View,
@@ -110,7 +111,7 @@ export default function EspecialistasScreen() {
       >
         {/* Estado vazio — substituir por lista real */}
         <View style={[styles.emptyCard, { backgroundColor: tema.card }]}>
-          <Text style={styles.emptyIcone}>🩺</Text>
+          <MaterialIcons name="medical-services" size={40} color={tema.subtext} />
           <Text style={[styles.emptyTxt, { color: tema.subtext }]}>
             Nenhum especialista {filtro === 'todos' ? 'cadastrado' : filtro}.
           </Text>
@@ -170,6 +171,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  emptyIcone: { fontSize: 40 },
   emptyTxt: { fontSize: 15 },
 });

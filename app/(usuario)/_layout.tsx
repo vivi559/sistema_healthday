@@ -4,47 +4,19 @@
  */
 
 import { HD } from "@/constants/theme";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import type { ComponentProps } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 
-// ─── Ícones em emoji/texto (sem biblioteca externa) ───────────────────────────
+type IconName = ComponentProps<typeof MaterialIcons>["name"];
 
-function IconHome({ focused }: { focused: boolean }) {
+// ─── Ícone da tab (Material Icons) ────────────────────────────────────────────
+
+function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
   return (
     <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Text style={styles.iconEmoji}>🏠</Text>
-    </View>
-  );
-}
-
-function IconTreinos({ focused }: { focused: boolean }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Text style={styles.iconEmoji}>🏋️</Text>
-    </View>
-  );
-}
-
-function IconDieta({ focused }: { focused: boolean }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Text style={styles.iconEmoji}>🥗</Text>
-    </View>
-  );
-}
-
-function IconAgenda({ focused }: { focused: boolean }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Text style={styles.iconEmoji}>📅</Text>
-    </View>
-  );
-}
-
-function IconPerfil({ focused }: { focused: boolean }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Text style={styles.iconEmoji}>👤</Text>
+      <MaterialIcons name={name} size={22} color={HD.white} />
     </View>
   );
 }
@@ -67,35 +39,35 @@ export default function UsuarioLayout() {
         name="home"
         options={{
           title: "home",
-          tabBarIcon: ({ focused }) => <IconHome focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="treinos"
         options={{
           title: "treinos",
-          tabBarIcon: ({ focused }) => <IconTreinos focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="fitness-center" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="dieta"
         options={{
           title: "dieta",
-          tabBarIcon: ({ focused }) => <IconDieta focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="restaurant" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="agenda"
         options={{
           title: "agenda",
-          tabBarIcon: ({ focused }) => <IconAgenda focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="event" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
           title: "perfil",
-          tabBarIcon: ({ focused }) => <IconPerfil focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="person" focused={focused} />,
         }}
       />
     </Tabs>
@@ -136,9 +108,6 @@ const styles = StyleSheet.create({
   },
   iconWrapActive: {
     backgroundColor: HD.primary,
-  },
-  iconEmoji: {
-    fontSize: 20,
   },
 
   // Label

@@ -13,6 +13,7 @@ import {
 } from '@/constants/Storage';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -72,10 +73,10 @@ function WheelColumn({
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={prev} style={wStyles.arrow}>
-        <Text style={[wStyles.arrowTxt, { color: tema.subtext }]}>‹</Text>
+        <MaterialIcons name="keyboard-arrow-up" size={24} color={tema.subtext} />
       </TouchableOpacity>
       <TouchableOpacity onPress={next} style={wStyles.arrowBottom}>
-        <Text style={[wStyles.arrowTxt, { color: tema.subtext }]}>›</Text>
+        <MaterialIcons name="keyboard-arrow-down" size={24} color={tema.subtext} />
       </TouchableOpacity>
     </View>
   );
@@ -90,7 +91,6 @@ const wStyles = StyleSheet.create({
   itemFade:     { fontSize: 16, paddingVertical: 4, paddingHorizontal: 8 },
   arrow:        { marginTop: 6 },
   arrowBottom:  { marginTop: 2 },
-  arrowTxt:     { fontSize: 22, fontWeight: '700', transform: [{ rotate: '90deg' }] },
 });
 
 // ── Tela principal ───────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export default function AgendaScreen() {
     setLembretes(atualizados);
     setTextoLembrete('');
     setModalVisible(false);
-    Alert.alert('✅ Lembrete salvo!', `${textoLembrete}\n${dataStr} às ${selHora}:${selMin}`);
+    Alert.alert('Lembrete salvo!', `${textoLembrete}\n${dataStr} às ${selHora}:${selMin}`);
   }
 
   async function handleRemover(id: string) {
@@ -206,7 +206,7 @@ export default function AgendaScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -214,7 +214,7 @@ export default function AgendaScreen() {
           <LogoHealthDay size={32} />
         </View>
         <TouchableOpacity style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
@@ -224,18 +224,18 @@ export default function AgendaScreen() {
         <TouchableOpacity style={styles.btnAdicionar} onPress={() => abrirModal()} activeOpacity={0.8}>
           <Text style={styles.btnAdicionarTxt}>Adicionar Lembrete</Text>
           <View style={styles.btnAdicionarIcone}>
-            <Text style={styles.btnAdicionarIconeTxt}>＋</Text>
+            <MaterialIcons name="add" size={20} color={HD.white} />
           </View>
         </TouchableOpacity>
 
         {/* Navegação mês */}
         <View style={styles.mesNavRow}>
-          <TouchableOpacity onPress={() => mudarMes(-1)}>
-            <Text style={[styles.mesNavBtn, { color: tema.subtext }]}>‹</Text>
+          <TouchableOpacity onPress={() => mudarMes(-1)} style={styles.mesNavBtn}>
+            <MaterialIcons name="chevron-left" size={28} color={tema.subtext} />
           </TouchableOpacity>
           <Text style={[styles.mesAtual, { color: tema.text }]}>{MESES[mes]} {ano}</Text>
-          <TouchableOpacity onPress={() => mudarMes(1)}>
-            <Text style={[styles.mesNavBtn, { color: tema.subtext }]}>›</Text>
+          <TouchableOpacity onPress={() => mudarMes(1)} style={styles.mesNavBtn}>
+            <MaterialIcons name="chevron-right" size={28} color={tema.subtext} />
           </TouchableOpacity>
         </View>
 
@@ -281,7 +281,7 @@ export default function AgendaScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.lembreteIcone}>
-                  <Text style={{ fontSize: 16 }}>🔔</Text>
+                  <MaterialIcons name="notifications" size={20} color={HD.accent} />
                 </View>
                 <View style={styles.lembreteInfo}>
                   <Text style={[styles.lembreteTxt, { color: tema.text }]}>{l.texto}</Text>
@@ -289,8 +289,8 @@ export default function AgendaScreen() {
                     {l.data.split('-').reverse().join('/')} às {l.hora}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => handleRemover(l.id)}>
-                  <Text style={styles.removerBtn}>✕</Text>
+                <TouchableOpacity onPress={() => handleRemover(l.id)} style={styles.removerBtn}>
+                  <MaterialIcons name="close" size={20} color={HD.accent} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
@@ -308,7 +308,7 @@ export default function AgendaScreen() {
             <View style={styles.modalHeaderRow}>
               <Text style={[styles.modalTitulo, { color: tema.text }]}>Novo Lembrete</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={[styles.modalFechar, { color: tema.subtext }]}>✕</Text>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
               </TouchableOpacity>
             </View>
 
@@ -330,7 +330,7 @@ export default function AgendaScreen() {
             {/* Preview */}
             <View style={styles.previewRow}>
               <Text style={[styles.previewTxt, { color: tema.subtext }]}>
-                📅 {selDia}/{MESES_CURTO.indexOf(selMes) + 1}/{selAno}  ⏰ {selHora}:{selMin}
+                {selDia}/{MESES_CURTO.indexOf(selMes) + 1}/{selAno} às {selHora}:{selMin}
               </Text>
             </View>
 
@@ -362,12 +362,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12,
   },
   notifBtn:     { position: 'relative', width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  notifIcon:    { fontSize: 22 },
   notifBadge:   { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: HD.accent },
   headerCenter: { alignItems: 'center' },
   headerTitle:  { fontSize: 22, fontWeight: '800', color: HD.primary },
   menuBtn:      { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  menuIcon:     { fontSize: 22, color: HD.primary },
 
   scrollContent: { paddingHorizontal: 20 },
 
@@ -377,10 +375,9 @@ const styles = StyleSheet.create({
   },
   btnAdicionarTxt:      { fontSize: 16, fontWeight: '700', color: HD.white },
   btnAdicionarIcone:    { width: 32, height: 32, borderRadius: 16, backgroundColor: HD.textDark, alignItems: 'center', justifyContent: 'center' },
-  btnAdicionarIconeTxt: { color: HD.white, fontSize: 20, fontWeight: '700', lineHeight: 26 },
 
   mesNavRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingHorizontal: 8 },
-  mesNavBtn:      { fontSize: 28, fontWeight: '700', paddingHorizontal: 8 },
+  mesNavBtn:      { paddingHorizontal: 4, paddingVertical: 4 },
   mesAtual:       { fontSize: 18, fontWeight: '700' },
 
   diasSemanaRow:  { flexDirection: 'row', marginBottom: 8 },
@@ -403,13 +400,12 @@ const styles = StyleSheet.create({
   lembreteInfo:  { flex: 1 },
   lembreteTxt:   { fontSize: 14, fontWeight: '600', marginBottom: 2 },
   lembreteData:  { fontSize: 12 },
-  removerBtn:    { fontSize: 16, color: HD.accent, fontWeight: '700', padding: 4 },
+  removerBtn:    { padding: 4 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard:    { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 },
   modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitulo:  { fontSize: 18, fontWeight: '800' },
-  modalFechar:  { fontSize: 20, fontWeight: '700' },
 
   rodasContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, padding: 16, marginBottom: 16, gap: 4 },
   separador:      { fontSize: 24, fontWeight: '800', marginBottom: 20 },

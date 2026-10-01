@@ -6,7 +6,7 @@ import {
 import { HD } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
 import LogoHealthDay from '@/components/LogoHealthDay';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 
@@ -94,7 +94,7 @@ export default function EspecialistaSolicitacoes() {
       await AsyncStorage.setItem('@solicitacoes', JSON.stringify(atualizadas));
       setSolicitacoes(atualizadas);
       setModalVisible(false);
-      Alert.alert('✅ Respondido!', `Solicitação de ${solicitacaoAtiva.usuarioNome} respondida com sucesso.`);
+      Alert.alert('Respondido!', `Solicitação de ${solicitacaoAtiva.usuarioNome} respondida com sucesso.`);
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar a resposta.');
     }
@@ -114,7 +114,7 @@ export default function EspecialistaSolicitacoes() {
       {/* Header */}
       <View style={s.header}>
         <View style={s.notifBadge}>
-          <Ionicons name="notifications-outline" size={24} color={HD.accent} />
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           {pendentes > 0 && (
             <View style={s.badge}><Text style={s.badgeTxt}>{pendentes}</Text></View>
           )}
@@ -123,7 +123,7 @@ export default function EspecialistaSolicitacoes() {
           <Text style={s.headerTitle}>Solicitações</Text>
           <LogoHealthDay size={28} />
         </View>
-        <Ionicons name="menu-outline" size={28} color={HD.primary} />
+        <MaterialIcons name="menu" size={26} color={HD.primary} />
       </View>
 
       {/* Filtros */}
@@ -149,7 +149,7 @@ export default function EspecialistaSolicitacoes() {
       <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
         {solicitacoesFiltradas.length === 0 ? (
           <View style={s.vazio}>
-            <Ionicons name="checkmark-circle-outline" size={60} color={HD.primary} />
+            <MaterialIcons name="check-circle-outline" size={60} color={HD.primary} />
             <Text style={s.vazioTxt}>Nenhuma solicitação aqui!</Text>
           </View>
         ) : (
@@ -158,13 +158,13 @@ export default function EspecialistaSolicitacoes() {
               <View style={s.cardHeader}>
                 <View style={s.cardLeft}>
                   <View style={[s.tipoBadge, sol.tipo === 'treino' ? s.tipoBadgeTreino : s.tipoBadgeDieta]}>
-                    <Text style={s.tipoBadgeTxt}>{sol.tipo === 'treino' ? '💪 Treino' : '🥗 Dieta'}</Text>
+                    <Text style={s.tipoBadgeTxt}>{sol.tipo === 'treino' ? 'Treino' : 'Dieta'}</Text>
                   </View>
                   <Text style={s.cardNome}>{sol.usuarioNome}</Text>
                   <Text style={s.cardId}>ID: {sol.usuarioId}</Text>
                 </View>
                 <View style={[s.statusBadge, sol.status === 'pendente' ? s.statusPendente : s.statusRespondido]}>
-                  <Text style={s.statusTxt}>{sol.status === 'pendente' ? '⏳ Pendente' : '✅ Respondida'}</Text>
+                  <Text style={s.statusTxt}>{sol.status === 'pendente' ? 'Pendente' : 'Respondida'}</Text>
                 </View>
               </View>
 
@@ -184,7 +184,7 @@ export default function EspecialistaSolicitacoes() {
               <View style={s.cardFooter}>
                 <Text style={s.cardData}>{sol.dataCriacao}</Text>
                 <Text style={s.cardAcao}>
-                  {sol.status === 'pendente' ? 'Toque para responder →' : 'Toque para editar →'}
+                  {sol.status === 'pendente' ? 'Toque para responder' : 'Toque para editar'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -200,13 +200,13 @@ export default function EspecialistaSolicitacoes() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitulo}>Responder Solicitação</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
+                <MaterialIcons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
               </TouchableOpacity>
             </View>
 
             {solicitacaoAtiva && (
               <>
-                <Text style={s.modalAluno}>👤 {solicitacaoAtiva.usuarioNome}</Text>
+                <Text style={s.modalAluno}>{solicitacaoAtiva.usuarioNome}</Text>
                 <View style={s.modalMensagemBox}>
                   <Text style={s.modalMensagemLabel}>Mensagem do aluno:</Text>
                   <Text style={s.modalMensagem}>{solicitacaoAtiva.mensagem}</Text>
@@ -229,7 +229,7 @@ export default function EspecialistaSolicitacoes() {
                 <TouchableOpacity style={s.modalBtn} onPress={responderSolicitacao}>
                   <Text style={s.modalBtnTxt}>Confirmar Resposta</Text>
                   <View style={s.checkCircle}>
-                    <Ionicons name="checkmark" size={20} color="#fff" />
+                    <MaterialIcons name="check" size={20} color="#fff" />
                   </View>
                 </TouchableOpacity>
               </>

@@ -3,7 +3,8 @@
  * Tela principal do painel de administrador.
  */
 
-import { useEffect, useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   View,
   Text,
@@ -15,14 +16,24 @@ import {
 } from 'react-native';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { getTema, type User } from '@/constants/Storage';
+import LogoHealthDay from '@/components/LogoHealthDay';
+
+type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 type StatCard = {
   id: string;
-  icone: string;
+  icone: IconName;
   label: string;
   valor: string | number;
   cor: string;
 };
+
+const ACOES: { icone: IconName; label: string }[] = [
+  { icone: 'how-to-reg', label: 'Aprovar especialistas pendentes' },
+  { icone: 'block',      label: 'Gerenciar usuários bloqueados' },
+  { icone: 'campaign',   label: 'Enviar notificação global' },
+  { icone: 'sync',       label: 'Sincronizar dados' },
+];
 
 export default function DashboardScreen() {
   const [temaDark, setTemaDark] = useState(false);
@@ -40,10 +51,10 @@ export default function DashboardScreen() {
   }, []);
 
   const STATS: StatCard[] = [
-    { id: 'usuarios',      icone: '👥', label: 'Usuários',      valor: '—', cor: HD.primary },
-    { id: 'especialistas', icone: '🩺', label: 'Especialistas', valor: '—', cor: HD.secondary },
-    { id: 'treinos',       icone: '🏋️', label: 'Treinos',       valor: '—', cor: HD.kcal },
-    { id: 'dietas',        icone: '🥗', label: 'Dietas',        valor: '—', cor: HD.accent },
+    { id: 'usuarios',      icone: 'group',            label: 'Usuários',      valor: '—', cor: HD.primary },
+    { id: 'especialistas', icone: 'medical-services', label: 'Especialistas', valor: '—', cor: HD.secondary },
+    { id: 'treinos',       icone: 'fitness-center',   label: 'Treinos',       valor: '—', cor: HD.kcal },
+    { id: 'dietas',        icone: 'restaurant',       label: 'Dietas',        valor: '—', cor: HD.accent },
   ];
 
   if (loading) {
@@ -65,9 +76,7 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Admin</Text>
-          <View style={styles.logoMini}>
-            <Text style={styles.logoMiniEmoji}>🛡️</Text>
-          </View>
+          <LogoHealthDay size={32} />
         </View>
       </View>
 
@@ -93,7 +102,7 @@ export default function DashboardScreen() {
               style={[styles.statCard, { backgroundColor: tema.card }]}
               activeOpacity={0.8}
             >
-              <Text style={styles.statIcone}>{stat.icone}</Text>
+              <MaterialIcons name={stat.icone} size={26} color={stat.cor} style={styles.statIcone} />
               <Text style={[styles.statValor, { color: stat.cor }]}>{stat.valor}</Text>
               <Text style={[styles.statLabel, { color: tema.subtext }]}>{stat.label}</Text>
             </TouchableOpacity>
@@ -103,12 +112,7 @@ export default function DashboardScreen() {
         {/* Ações rápidas */}
         <View style={[styles.acoesCard, { backgroundColor: tema.card }]}>
           <Text style={[styles.acoesTitle, { color: tema.text }]}>Ações Rápidas</Text>
-          {[
-            { icone: '✅', label: 'Aprovar especialistas pendentes' },
-            { icone: '🚫', label: 'Gerenciar usuários bloqueados' },
-            { icone: '📢', label: 'Enviar notificação global' },
-            { icone: '🔄', label: 'Sincronizar dados' },
-          ].map((acao, idx, arr) => (
+          {ACOES.map((acao, idx, arr) => (
             <TouchableOpacity
               key={idx}
               style={[
@@ -121,10 +125,10 @@ export default function DashboardScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.acaoLeft}>
-                <Text style={styles.acaoIcone}>{acao.icone}</Text>
+                <MaterialIcons name={acao.icone} size={22} color={HD.primary} />
                 <Text style={[styles.acaoLabel, { color: tema.text }]}>{acao.label}</Text>
               </View>
-              <Text style={[styles.acaoChevron, { color: tema.subtext }]}>›</Text>
+              <MaterialIcons name="chevron-right" size={22} color={tema.subtext} />
             </TouchableOpacity>
           ))}
         </View>
@@ -158,17 +162,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: HD.primary,
   },
-  logoMini: {
-    width: 32, height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: HD.primary,
-    backgroundColor: HD.cardLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  logoMiniEmoji: { fontSize: 16 },
 
   // Scroll
   scrollContent: {
@@ -215,7 +208,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
-  statIcone: { fontSize: 28, marginBottom: 6 },
+  statIcone: { marginBottom: 6 },
   statValor: { fontSize: 24, fontWeight: '800', marginBottom: 2 },
   statLabel: { fontSize: 12, fontWeight: '600' },
 
@@ -248,7 +241,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  acaoIcone: { fontSize: 20 },
   acaoLabel: { fontSize: 15, fontWeight: '500' },
-  acaoChevron: { fontSize: 22, fontWeight: '600' },
 });

@@ -3,7 +3,8 @@
  * Tela de perfil e configurações do administrador.
  */
 
-import { useEffect, useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   View,
   Text,
@@ -24,18 +25,21 @@ import {
   getTema,
   type User,
 } from '@/constants/Storage';
+import LogoHealthDay from '@/components/LogoHealthDay';
+
+type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 type MenuItem = {
   id: string;
-  icone: string;
+  icone: IconName;
   label: string;
 };
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: 'conta',       icone: '🛡️', label: 'Dados da conta admin'      },
-  { id: 'seguranca',   icone: '🔒', label: 'Segurança e acesso'         },
-  { id: 'logs',        icone: '📝', label: 'Logs de atividade'          },
-  { id: 'configuracoes', icone: '⚙️', label: 'Configurações do sistema' },
+  { id: 'conta',         icone: 'admin-panel-settings', label: 'Dados da conta admin'      },
+  { id: 'seguranca',     icone: 'lock-outline',         label: 'Segurança e acesso'         },
+  { id: 'logs',          icone: 'history',              label: 'Logs de atividade'          },
+  { id: 'configuracoes', icone: 'settings',             label: 'Configurações do sistema'   },
 ];
 
 export default function AdminPerfilScreen() {
@@ -105,13 +109,11 @@ export default function AdminPerfilScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={handleLogout}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Perfil Admin</Text>
-          <View style={styles.logoMini}>
-            <Text style={styles.logoMiniEmoji}>🛡️</Text>
-          </View>
+          <LogoHealthDay size={32} />
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -124,7 +126,7 @@ export default function AdminPerfilScreen() {
         <View style={[styles.perfilCard, { backgroundColor: tema.card }]}>
           <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarEmoji}>🛡️</Text>
+              <MaterialIcons name="admin-panel-settings" size={48} color={HD.textLight} />
             </View>
           </View>
           <Text style={[styles.userId, { color: tema.subtext }]}>
@@ -154,12 +156,12 @@ export default function AdminPerfilScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <Text style={styles.menuItemIcone}>{item.icone}</Text>
+                <MaterialIcons name={item.icone} size={22} color={HD.primary} />
                 <Text style={[styles.menuItemLabel, { color: tema.text }]}>
                   {item.label}
                 </Text>
               </View>
-              <Text style={[styles.menuChevron, { color: tema.subtext }]}>›</Text>
+              <MaterialIcons name="chevron-right" size={22} color={tema.subtext} />
             </TouchableOpacity>
           ))}
         </View>
@@ -185,7 +187,7 @@ export default function AdminPerfilScreen() {
           onPress={handleLogout}
           activeOpacity={0.8}
         >
-          <Text style={styles.logoutTxt}>🚪 Sair do painel</Text>
+          <Text style={styles.logoutTxt}>Sair do painel</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -208,19 +210,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: HD.primary },
-  logoMini: {
-    width: 32, height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: HD.primary,
-    backgroundColor: HD.cardLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  logoMiniEmoji: { fontSize: 16 },
   menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  menuIcon: { fontSize: 22, color: HD.primary },
 
   scrollContent: {
     paddingHorizontal: 20,
@@ -248,7 +238,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: HD.primary,
   },
-  avatarEmoji: { fontSize: 44 },
   userId: { fontSize: 12, marginBottom: 4 },
   userName: { fontSize: 24, fontWeight: '800', marginBottom: 8 },
   roleBadge: {
@@ -276,9 +265,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  menuItemIcone: { fontSize: 20 },
   menuItemLabel: { fontSize: 15, fontWeight: '500' },
-  menuChevron: { fontSize: 22, fontWeight: '600' },
 
   bottomCard: {
     borderRadius: 20,

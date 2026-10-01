@@ -8,6 +8,7 @@ import LogoHealthDay from '@/components/LogoHealthDay';
 import { getNoticias, getUserAtual, type Noticia, type User } from '@/constants/Storage';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -63,7 +64,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: tema.background }]}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
 
@@ -73,14 +74,14 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Saudação */}
       {user && (
         <Text style={[styles.saudacao, { color: tema.subtext }]}>
-          Olá, {user.nome.split(' ')[0]}! 👋
+          Olá, {user.nome.split(' ')[0]}!
         </Text>
       )}
 
@@ -92,7 +93,7 @@ export default function HomeScreen() {
       >
         {noticias.length === 0 ? (
           <View style={styles.vazioWrap}>
-            <Text style={styles.vazioEmoji}>📰</Text>
+            <MaterialIcons name="article" size={48} color={tema.subtext} />
             <Text style={[styles.vazioTxt, { color: tema.subtext }]}>
               Nenhuma notícia disponível ainda.{'\n'}Os especialistas publicarão em breve!
             </Text>
@@ -121,13 +122,13 @@ export default function HomeScreen() {
                     noticia.categoria === 'saude'       && { backgroundColor: '#E0E7FF' },
                   ]}>
                     <Text style={styles.categoriaText}>
-                      {noticia.categoria === 'alimentacao' ? '🥗 Alimentação'
-                        : noticia.categoria === 'exercicio' ? '🏋️ Exercício'
-                        : '❤️ Saúde'}
+                      {noticia.categoria === 'alimentacao' ? 'Alimentação'
+                        : noticia.categoria === 'exercicio' ? 'Exercício'
+                        : 'Saúde'}
                     </Text>
                   </View>
                   <Text style={[styles.noticiaAutor, { color: tema.subtext }]}>
-                    ✍️ {noticia.autorNome} · {noticia.criadaEm}
+                    Por {noticia.autorNome} · {noticia.criadaEm}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -154,7 +155,7 @@ export default function HomeScreen() {
             {/* Header do modal */}
             <View style={styles.modalHeaderRow}>
               <TouchableOpacity onPress={() => setNoticiaAberta(null)} style={styles.modalFecharBtn}>
-                <Text style={[styles.modalFechar, { color: tema.subtext }]}>✕</Text>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
               </TouchableOpacity>
             </View>
 
@@ -177,9 +178,9 @@ export default function HomeScreen() {
                 noticiaAberta?.categoria === 'saude'       && { backgroundColor: '#E0E7FF' },
               ]}>
                 <Text style={styles.categoriaText}>
-                  {noticiaAberta?.categoria === 'alimentacao' ? '🥗 Alimentação'
-                    : noticiaAberta?.categoria === 'exercicio' ? '🏋️ Exercício'
-                    : '❤️ Saúde'}
+                  {noticiaAberta?.categoria === 'alimentacao' ? 'Alimentação'
+                    : noticiaAberta?.categoria === 'exercicio' ? 'Exercício'
+                    : 'Saúde'}
                 </Text>
               </View>
 
@@ -190,7 +191,7 @@ export default function HomeScreen() {
 
               {/* Autor e data */}
               <Text style={[styles.modalAutor, { color: tema.subtext }]}>
-                ✍️ {noticiaAberta?.autorNome} · {noticiaAberta?.criadaEm}
+                Por {noticiaAberta?.autorNome} · {noticiaAberta?.criadaEm}
               </Text>
 
               {/* Texto completo */}
@@ -225,7 +226,6 @@ const styles = StyleSheet.create({
     width: 40, height: 40,
     alignItems: 'center', justifyContent: 'center',
   },
-  notifIcon:  { fontSize: 22 },
   notifBadge: {
     position: 'absolute',
     top: 6, right: 6,
@@ -236,7 +236,6 @@ const styles = StyleSheet.create({
   headerCenter: { alignItems: 'center' },
   headerTitle:  { fontSize: 22, fontWeight: '800', color: HD.primary },
   menuBtn:      { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  menuIcon:     { fontSize: 22, color: HD.primary },
 
   // Saudação
   saudacao: { fontSize: 16, fontWeight: '600', paddingHorizontal: 20, marginBottom: 8 },
@@ -247,7 +246,6 @@ const styles = StyleSheet.create({
 
   // Vazio
   vazioWrap: { alignItems: 'center', marginTop: 80, gap: 16 },
-  vazioEmoji: { fontSize: 48 },
   vazioTxt:   { fontSize: 15, textAlign: 'center', lineHeight: 22 },
 
   // Card notícia
@@ -304,7 +302,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalFecharBtn: { padding: 4 },
-  modalFechar:    { fontSize: 20, fontWeight: '700' },
   modalImagem: {
     width: '100%',
     height: 200,

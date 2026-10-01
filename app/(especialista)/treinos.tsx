@@ -6,7 +6,7 @@ import {
 import { HD } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
 import LogoHealthDay from '@/components/LogoHealthDay';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
@@ -158,7 +158,7 @@ export default function EspecialistaTreinos() {
       treinos[diaSelecionado] = [...treinos[diaSelecionado], ...exerciciosAdicionados];
 
       await AsyncStorage.setItem(chave, JSON.stringify(treinos));
-      Alert.alert('✅ Treino salvo!', `Treino de ${diaSelecionado} salvo para ${alunoSelecionado.nome}!`);
+      Alert.alert('Treino salvo!', `Treino de ${diaSelecionado} salvo para ${alunoSelecionado.nome}!`);
       setExerciciosAdicionados([]);
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar o treino.');
@@ -171,7 +171,7 @@ export default function EspecialistaTreinos() {
     <>
       <TouchableOpacity style={s.dropdown} onPress={onToggle}>
         <Text style={s.dropdownTxt}>{valor || label}</Text>
-        <Ionicons name={show ? 'chevron-up' : 'chevron-down'} size={20} color={temaDark ? '#ccc' : '#555'} />
+        <MaterialIcons name={show ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
       </TouchableOpacity>
       {show && (
         <View style={s.dropdownList}>
@@ -190,12 +190,12 @@ export default function EspecialistaTreinos() {
       <StatusBar barStyle={temaDark ? 'light-content' : 'dark-content'} />
 
       <View style={s.header}>
-        <Ionicons name="notifications-outline" size={24} color={HD.accent} />
+        <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
         <View style={s.headerCenter}>
           <Text style={s.headerTitle}>Especialista</Text>
           <LogoHealthDay size={28} />
         </View>
-        <Ionicons name="menu-outline" size={28} color={HD.primary} />
+        <MaterialIcons name="menu" size={26} color={HD.primary} />
       </View>
 
       {/* Abas */}
@@ -227,7 +227,7 @@ export default function EspecialistaTreinos() {
         {/* Aluno */}
         <TouchableOpacity style={s.dropdown} onPress={() => { fecharTodos(); setShowAlunos(!showAlunos); }}>
           <Text style={s.dropdownTxt}>{alunoSelecionado ? `ID:${alunoSelecionado.id}_${alunoSelecionado.nome}` : 'Selecione o aluno'}</Text>
-          <Ionicons name={showAlunos ? 'chevron-up' : 'chevron-down'} size={20} color={temaDark ? '#ccc' : '#555'} />
+          <MaterialIcons name={showAlunos ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
         </TouchableOpacity>
         {showAlunos && (
           <View style={s.dropdownList}>
@@ -242,7 +242,7 @@ export default function EspecialistaTreinos() {
         {/* Exercício */}
         <TouchableOpacity style={s.dropdown} onPress={() => { fecharTodos(); setShowExercicios(!showExercicios); }}>
           <Text style={s.dropdownTxt}>{exercicioSelecionado ? exercicioSelecionado.nome : 'Selecione o exercicio'}</Text>
-          <Ionicons name={showExercicios ? 'chevron-up' : 'chevron-down'} size={20} color={temaDark ? '#ccc' : '#555'} />
+          <MaterialIcons name={showExercicios ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
         </TouchableOpacity>
         {showExercicios && (
           <View style={s.dropdownList}>
@@ -278,7 +278,7 @@ export default function EspecialistaTreinos() {
 
         {/* Botão adicionar exercício */}
         <TouchableOpacity style={s.adicionarBtn} onPress={adicionarExercicio}>
-          <Ionicons name="add-circle-outline" size={20} color={HD.primary} />
+          <MaterialIcons name="add-circle-outline" size={20} color={HD.primary} />
           <Text style={s.adicionarTxt}>Adicionar Exercício à Lista</Text>
         </TouchableOpacity>
 
@@ -297,7 +297,7 @@ export default function EspecialistaTreinos() {
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => removerExercicio(item.id)}>
-                  <Ionicons name="trash-outline" size={20} color={HD.accent} />
+                  <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -320,7 +320,7 @@ export default function EspecialistaTreinos() {
             ) : (
               DIAS.filter(d => treinosSalvos[d] && treinosSalvos[d].length > 0).map(dia => (
                 <View key={dia} style={s.listaBox}>
-                  <Text style={s.listaTitulo}>📅 {dia}</Text>
+                  <Text style={s.listaTitulo}>{dia}</Text>
                   {treinosSalvos[dia].map((item: any, idx: number) => (
                     <View key={idx} style={s.exercicioCard}>
                       <View style={s.exercicioInfo}>
@@ -332,7 +332,7 @@ export default function EspecialistaTreinos() {
                         </View>
                       </View>
                       <TouchableOpacity onPress={() => removerExercicioSalvo(dia, idx)}>
-                        <Ionicons name="trash-outline" size={20} color={HD.accent} />
+                        <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -350,7 +350,7 @@ export default function EspecialistaTreinos() {
         <TouchableOpacity style={s.concluirBtn} onPress={concluirTreino}>
           <Text style={s.concluirTxt}>Concluir Treino</Text>
           <View style={s.checkCircle}>
-            <Ionicons name="checkmark" size={22} color="#fff" />
+            <MaterialIcons name="check" size={22} color="#fff" />
           </View>
         </TouchableOpacity>
       </View>

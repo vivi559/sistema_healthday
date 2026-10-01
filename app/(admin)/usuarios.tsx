@@ -3,7 +3,8 @@
  * Tela de relatórios e métricas gerais do app.
  */
 
-import { useEffect, useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   View,
   Text,
@@ -16,6 +17,8 @@ import {
 } from 'react-native';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { getTema } from '@/constants/Storage';
+
+type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 export default function RelatoriosScreen() {
   const [temaDark, setTemaDark] = useState(false);
@@ -32,13 +35,13 @@ export default function RelatoriosScreen() {
     carregar();
   }, []);
 
-  const RELATORIOS = [
-    { id: 'usuarios_ativos',  icone: '👥', label: 'Usuários ativos este mês',   valor: '—' },
-    { id: 'novos_cadastros',  icone: '✅', label: 'Novos cadastros',             valor: '—' },
-    { id: 'treinos_criados',  icone: '🏋️', label: 'Treinos criados',             valor: '—' },
-    { id: 'dietas_criadas',   icone: '🥗', label: 'Dietas criadas',              valor: '—' },
-    { id: 'media_imc',        icone: '📊', label: 'IMC médio dos usuários',      valor: '—' },
-    { id: 'especialistas_ok', icone: '🩺', label: 'Especialistas aprovados',     valor: '—' },
+  const RELATORIOS: { id: string; icone: IconName; label: string; valor: string }[] = [
+    { id: 'usuarios_ativos',  icone: 'group',            label: 'Usuários ativos este mês',   valor: '—' },
+    { id: 'novos_cadastros',  icone: 'person-add',       label: 'Novos cadastros',             valor: '—' },
+    { id: 'treinos_criados',  icone: 'fitness-center',   label: 'Treinos criados',             valor: '—' },
+    { id: 'dietas_criadas',   icone: 'restaurant',       label: 'Dietas criadas',              valor: '—' },
+    { id: 'media_imc',        icone: 'monitor-weight',   label: 'IMC médio dos usuários',      valor: '—' },
+    { id: 'especialistas_ok', icone: 'verified-user',    label: 'Especialistas aprovados',     valor: '—' },
   ];
 
   if (loading) {
@@ -88,7 +91,7 @@ export default function RelatoriosScreen() {
               ]}
             >
               <View style={styles.metricaLeft}>
-                <Text style={styles.metricaIcone}>{r.icone}</Text>
+                <MaterialIcons name={r.icone} size={22} color={HD.primary} />
                 <Text style={[styles.metricaLabel, { color: tema.text }]}>{r.label}</Text>
               </View>
               <Text style={[styles.metricaValor, { color: HD.primary }]}>{r.valor}</Text>
@@ -102,7 +105,7 @@ export default function RelatoriosScreen() {
           onPress={() => Alert.alert('Exportar', 'Funcionalidade em desenvolvimento.')}
           activeOpacity={0.8}
         >
-          <Text style={styles.exportTxt}>📤 Exportar Relatório</Text>
+          <Text style={styles.exportTxt}>Exportar Relatório</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -170,7 +173,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   metricaLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  metricaIcone: { fontSize: 20 },
   metricaLabel: { fontSize: 14, fontWeight: '500', flex: 1 },
   metricaValor: { fontSize: 16, fontWeight: '800' },
 

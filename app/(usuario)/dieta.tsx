@@ -18,6 +18,7 @@ import {
 } from "@/constants/Storage";
 import { HD, darkTheme, lightTheme } from "@/constants/theme";
 import { useTema } from "@/context/TemaContext";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -116,7 +117,7 @@ export default function DietaScreen() {
     setModalQtd(false);
     setTela("dieta");
     Alert.alert(
-      "✅ Adicionado!",
+      "Adicionado!",
       `${g}g de ${alimentoSel.nome} adicionado em ${refeicaoAtual}.`,
     );
   }
@@ -130,7 +131,7 @@ export default function DietaScreen() {
       return;
     }
     Alert.alert(
-      "🩺 Solicitar Dieta Personalizada",
+      "Solicitar Dieta Personalizada",
       "Deseja solicitar uma dieta personalizada feita por um especialista?",
       [
         { text: "Cancelar", style: "cancel" },
@@ -145,7 +146,7 @@ export default function DietaScreen() {
             });
             setJaSolicitou(true);
             Alert.alert(
-              "✅ Solicitação enviada!",
+              "Solicitação enviada!",
               "Um especialista irá criar sua dieta personalizada em breve.",
             );
           },
@@ -182,7 +183,8 @@ export default function DietaScreen() {
             onPress={() => setTela("dieta")}
             style={styles.backBtn}
           >
-            <Text style={styles.backText}>← Voltar</Text>
+            <MaterialIcons name="arrow-back" size={20} color={HD.primary} />
+            <Text style={styles.backText}>Voltar</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Dieta</Text>
@@ -199,7 +201,7 @@ export default function DietaScreen() {
         </Text>
 
         <View style={[styles.buscaContainer, { backgroundColor: tema.card }]}>
-          <Text style={styles.buscaIcon}>🔍</Text>
+          <MaterialIcons name="search" size={20} color={HD.placeholder} />
           <TextInput
             style={[styles.buscaInput, { color: tema.text }]}
             placeholder="Pesquise o Alimento"
@@ -230,9 +232,11 @@ export default function DietaScreen() {
                     {alimento.kcalPor100g}kcal/100g
                   </Text>
                 </View>
-                <Text style={[styles.alimentoSeta, { color: HD.primary }]}>
-                  ＋
-                </Text>
+                <MaterialIcons
+                  name="add-circle-outline"
+                  size={24}
+                  color={HD.primary}
+                />
               </TouchableOpacity>
               {index < alimentosFiltrados.length - 1 && (
                 <View
@@ -315,7 +319,7 @@ export default function DietaScreen() {
 
       <View style={[styles.header, { backgroundColor: tema.background }]}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -323,7 +327,7 @@ export default function DietaScreen() {
           <LogoHealthDay size={32} />
         </View>
         <TouchableOpacity style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
@@ -335,7 +339,12 @@ export default function DietaScreen() {
         {/* Sem dieta */}
         {!dieta ? (
           <View style={styles.semDieta}>
-            <Text style={styles.semDietaEmoji}>🥗</Text>
+            <MaterialIcons
+              name="restaurant"
+              size={56}
+              color={tema.subtext}
+              style={styles.semDietaIcone}
+            />
             <Text style={[styles.semDietaTitulo, { color: tema.text }]}>
               Nenhuma dieta encontrada
             </Text>
@@ -356,9 +365,6 @@ export default function DietaScreen() {
               ]}
             >
               <View style={styles.bannerAutoLeft}>
-                <Text style={styles.bannerAutoEmoji}>
-                  {jaSolicitou ? "⏳" : "🤖"}
-                </Text>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
@@ -397,7 +403,6 @@ export default function DietaScreen() {
 
             {/* Banner de macros */}
             <View style={[styles.bannerCard, { backgroundColor: tema.card }]}>
-              <Text style={styles.bannerEmoji}>🥦🥕🍅</Text>
               <Text style={[styles.bannerTitulo, { color: tema.subtext }]}>
                 {dieta.titulo}
               </Text>
@@ -454,7 +459,7 @@ export default function DietaScreen() {
                         onPress={() => abrirBusca(refeicao.tipo)}
                         style={styles.addBtn}
                       >
-                        <Text style={styles.addBtnText}>＋</Text>
+                        <MaterialIcons name="add" size={18} color={HD.white} />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.refeicaoHeaderRight}>
@@ -463,11 +468,11 @@ export default function DietaScreen() {
                       >
                         {kcal}Kcal
                       </Text>
-                      <Text
-                        style={[styles.refeicaoSeta, { color: tema.subtext }]}
-                      >
-                        {isExpanded ? "∧" : "∨"}
-                      </Text>
+                      <MaterialIcons
+                        name={isExpanded ? "expand-less" : "expand-more"}
+                        size={24}
+                        color={tema.subtext}
+                      />
                     </View>
                   </TouchableOpacity>
 
@@ -538,7 +543,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  notifIcon: { fontSize: 22 },
   notifBadge: {
     position: "absolute",
     top: 6,
@@ -556,15 +560,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuIcon: { fontSize: 22, color: HD.primary },
-  backBtn: { paddingVertical: 8, paddingRight: 8 },
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingRight: 8,
+  },
   backText: { fontSize: 15, color: HD.primary, fontWeight: "600" },
   buscaInfo: { fontSize: 13, paddingHorizontal: 20, marginBottom: 8 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
 
   semDieta: { alignItems: "center", marginTop: 60, paddingHorizontal: 20 },
-  semDietaEmoji: { fontSize: 56, marginBottom: 16 },
+  semDietaIcone: { marginBottom: 16 },
   semDietaTitulo: {
     fontSize: 18,
     fontWeight: "700",
@@ -585,7 +594,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
-  bannerAutoEmoji: { fontSize: 24 },
   bannerAutoTitulo: { fontSize: 14, fontWeight: "800", marginBottom: 2 },
   bannerAutoSub: { fontSize: 12, lineHeight: 17 },
   bannerAutoBtn: {
@@ -607,7 +615,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  bannerEmoji: { fontSize: 40, marginBottom: 6 },
   bannerTitulo: { fontSize: 14, marginBottom: 14 },
   macrosRow: { flexDirection: "row", gap: 6, width: "100%" },
   macroItem: { flex: 1, borderRadius: 10, padding: 8, alignItems: "center" },
@@ -637,10 +644,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  addBtnText: { color: HD.white, fontSize: 16, lineHeight: 20 },
   refeicaoHeaderRight: { flexDirection: "row", alignItems: "center", gap: 10 },
   refeicaoKcal: { fontSize: 14, fontWeight: "500" },
-  refeicaoSeta: { fontSize: 16 },
   alimentosLista: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
   alimentoRow: {
     flexDirection: "row",
@@ -680,7 +685,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  buscaIcon: { fontSize: 18 },
   buscaInput: { flex: 1, fontSize: 15 },
   alimentoItem: {
     flexDirection: "row",
@@ -691,7 +695,6 @@ const styles = StyleSheet.create({
   },
   alimentoNome: { fontSize: 15, fontWeight: "600" },
   alimentoKcal: { fontSize: 13, marginTop: 2 },
-  alimentoSeta: { fontSize: 22, fontWeight: "700" },
   divisor: { height: 1, marginHorizontal: 16 },
 
   // Modal quantidade

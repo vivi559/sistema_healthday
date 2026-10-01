@@ -42,7 +42,7 @@ export default function LoginScreen() {
       } else if (user.role === "especialista") {
         router.replace("/(especialista)/treinos");
       } else {
-        // ✅ Usuário comum: verifica se já fez o questionário
+        // Usuário comum: verifica se já fez o questionário
         if (!user.questionarioFeito) {
           router.replace("/(auth)/questionario" as any);
         } else {
@@ -113,9 +113,9 @@ export default function LoginScreen() {
       {/* Contas de teste */}
       <View style={styles.testBox}>
         <Text style={styles.testTitle}>Contas de teste:</Text>
-        <Text style={styles.testItem}>👤 jonas@email.com — 123456</Text>
-        <Text style={styles.testItem}>🩺 especialista@email.com — 123456</Text>
-        <Text style={styles.testItem}>🔧 admin@email.com — admin123</Text>
+        <Text style={styles.testItem}>Usuário: jonas@email.com — 123456</Text>
+        <Text style={styles.testItem}>Especialista: especialista@email.com — 123456</Text>
+        <Text style={styles.testItem}>Admin: admin@email.com — admin123</Text>
       </View>
 
       <TouchableOpacity onPress={() => router.push("/(auth)/cadastro")}>

@@ -6,7 +6,7 @@ import {
 import { HD } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
 import LogoHealthDay from '@/components/LogoHealthDay';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
@@ -173,7 +173,7 @@ export default function EspecialistaDieta() {
       dieta[diaSelecionado][refeicaoSelecionada] = alimentosSelecionados;
 
       await AsyncStorage.setItem(chave, JSON.stringify(dieta));
-      Alert.alert('✅ Dieta salva!', `Dieta de ${refeicaoSelecionada} salva para ${alunoSelecionado.nome} na ${diaSelecionado}.`);
+      Alert.alert('Dieta salva!', `Dieta de ${refeicaoSelecionada} salva para ${alunoSelecionado.nome} na ${diaSelecionado}.`);
       setAlimentosSelecionados([]);
       setRefeicaoSelecionada('');
       setBusca('');
@@ -188,12 +188,12 @@ export default function EspecialistaDieta() {
 
       {/* Header */}
       <View style={s.header}>
-        <Ionicons name="notifications-outline" size={24} color={HD.accent} />
+        <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
         <View style={s.headerCenter}>
           <Text style={s.headerTitle}>Especialista</Text>
           <LogoHealthDay size={28} />
         </View>
-        <Ionicons name="menu-outline" size={28} color={HD.primary} />
+        <MaterialIcons name="menu" size={26} color={HD.primary} />
       </View>
 
       {/* Abas */}
@@ -225,7 +225,7 @@ export default function EspecialistaDieta() {
         {/* Dropdown Aluno */}
         <TouchableOpacity style={s.dropdown} onPress={() => { setShowAlunos(!showAlunos); setShowRefeicoes(false); }}>
           <Text style={s.dropdownTxt}>{alunoSelecionado ? `ID:${alunoSelecionado.id} - ${alunoSelecionado.nome}` : 'Selecione o aluno'}</Text>
-          <Ionicons name={showAlunos ? 'chevron-up' : 'chevron-down'} size={20} color={temaDark ? '#ccc' : '#555'} />
+          <MaterialIcons name={showAlunos ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
         </TouchableOpacity>
         {showAlunos && (
           <View style={s.dropdownList}>
@@ -240,7 +240,7 @@ export default function EspecialistaDieta() {
         {/* Dropdown Refeição */}
         <TouchableOpacity style={s.dropdown} onPress={() => { setShowRefeicoes(!showRefeicoes); setShowAlunos(false); }}>
           <Text style={s.dropdownTxt}>{refeicaoSelecionada || 'Selecione a Refeição'}</Text>
-          <Ionicons name={showRefeicoes ? 'chevron-up' : 'chevron-down'} size={20} color={temaDark ? '#ccc' : '#555'} />
+          <MaterialIcons name={showRefeicoes ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
         </TouchableOpacity>
         {showRefeicoes && (
           <View style={s.dropdownList}>
@@ -254,7 +254,7 @@ export default function EspecialistaDieta() {
 
         {/* Busca */}
         <View style={s.buscaRow}>
-          <Ionicons name="search-outline" size={18} color="#aaa" style={{ marginRight: 8 }} />
+          <MaterialIcons name="search" size={20} color="#aaa" style={{ marginRight: 8 }} />
           <TextInput
             style={s.buscaInput}
             placeholder="Pesquise o Alimento"
@@ -275,8 +275,8 @@ export default function EspecialistaDieta() {
                   {a.kcal}kcal/100g{selecionado ? `  •  ${selecionado.quantidade}g adicionado(s)` : ''}
                 </Text>
               </View>
-              <Ionicons
-                name={selecionado ? 'checkmark-circle' : 'add-circle-outline'}
+              <MaterialIcons
+                name={selecionado ? 'check-circle' : 'add-circle-outline'}
                 size={22}
                 color={selecionado ? HD.primary : (temaDark ? '#888' : '#555')}
               />
@@ -287,7 +287,7 @@ export default function EspecialistaDieta() {
         {/* Selecionados */}
         {alimentosSelecionados.length > 0 && (
           <View style={s.selecionadosBox}>
-            <Text style={s.selecionadosTitle}>✅ {alimentosSelecionados.length} alimento(s) selecionado(s)</Text>
+            <Text style={s.selecionadosTitle}>{alimentosSelecionados.length} alimento(s) selecionado(s)</Text>
             {alimentosSelecionados.map(al => (
               <View key={al.id} style={s.selecionadoItem}>
                 <TouchableOpacity style={{ flex: 1 }} onPress={() => abrirModalAlimento(al)}>
@@ -295,10 +295,10 @@ export default function EspecialistaDieta() {
                   <Text style={s.selecionadoInfo}>{al.quantidade}g  •  {Math.round((al.kcal * al.quantidade) / 100)}kcal</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.selecionadoAcao} onPress={() => abrirModalAlimento(al)}>
-                  <Ionicons name="pencil-outline" size={16} color={HD.primary} />
+                  <MaterialIcons name="edit" size={18} color={HD.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={s.selecionadoAcao} onPress={() => removerAlimentoSelecionado(al.id)}>
-                  <Ionicons name="trash-outline" size={16} color={HD.accent} />
+                  <MaterialIcons name="delete-outline" size={18} color={HD.accent} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -321,13 +321,13 @@ export default function EspecialistaDieta() {
             ) : (
               DIAS.filter(d => dietasSalvas[d] && Object.keys(dietasSalvas[d]).length > 0).map(dia => (
                 <View key={dia} style={s.diaBox}>
-                  <Text style={s.diaTituloGerenciar}>📅 {dia}</Text>
+                  <Text style={s.diaTituloGerenciar}>{dia}</Text>
                   {Object.entries(dietasSalvas[dia]).map(([refeicao, alimentos]: [string, any]) => (
                     <View key={refeicao} style={s.refeicaoCard}>
                       <View style={s.refeicaoHeader}>
                         <Text style={s.refeicaoNome}>{refeicao}</Text>
                         <TouchableOpacity onPress={() => removerRefeicaoSalva(dia, refeicao)}>
-                          <Ionicons name="trash-outline" size={18} color={HD.accent} />
+                          <MaterialIcons name="delete-outline" size={20} color={HD.accent} />
                         </TouchableOpacity>
                       </View>
                       {alimentos.map((al: any) => (
@@ -352,7 +352,7 @@ export default function EspecialistaDieta() {
         <TouchableOpacity style={s.finalizarBtn} onPress={finalizarDieta}>
           <Text style={s.finalizarTxt}>Finalizar Dieta</Text>
           <View style={s.checkCircle}>
-            <Ionicons name="checkmark" size={22} color="#fff" />
+            <MaterialIcons name="check" size={22} color="#fff" />
           </View>
         </TouchableOpacity>
       </View>
@@ -369,7 +369,7 @@ export default function EspecialistaDieta() {
             <View style={s.modalHeader}>
               <Text style={s.modalTitulo}>{modalAlimento?.nome}</Text>
               <TouchableOpacity onPress={() => setShowModalAlimento(false)}>
-                <Ionicons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
+                <MaterialIcons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
               </TouchableOpacity>
             </View>
 
@@ -379,7 +379,7 @@ export default function EspecialistaDieta() {
                 <Text style={s.modalLabel}>Quantidade</Text>
                 <View style={s.qtdRow}>
                   <TouchableOpacity style={s.qtdBtn} onPress={() => ajustarQuantidade(-10)}>
-                    <Ionicons name="remove" size={20} color="#fff" />
+                    <MaterialIcons name="remove" size={20} color="#fff" />
                   </TouchableOpacity>
                   <TextInput
                     style={s.qtdInput}
@@ -389,7 +389,7 @@ export default function EspecialistaDieta() {
                   />
                   <Text style={s.qtdG}>g</Text>
                   <TouchableOpacity style={s.qtdBtn} onPress={() => ajustarQuantidade(10)}>
-                    <Ionicons name="add" size={20} color="#fff" />
+                    <MaterialIcons name="add" size={20} color="#fff" />
                   </TouchableOpacity>
                 </View>
 
@@ -442,7 +442,7 @@ export default function EspecialistaDieta() {
                 <TouchableOpacity style={s.modalBtn} onPress={confirmarAlimento}>
                   <Text style={s.modalBtnTxt}>{jaSelecionado ? 'Atualizar Quantidade' : 'Adicionar à Dieta'}</Text>
                   <View style={s.checkCircle}>
-                    <Ionicons name="checkmark" size={20} color="#fff" />
+                    <MaterialIcons name="check" size={20} color="#fff" />
                   </View>
                 </TouchableOpacity>
 
@@ -451,7 +451,7 @@ export default function EspecialistaDieta() {
                     style={s.modalRemoverBtn}
                     onPress={() => { removerAlimentoSelecionado(modalAlimento.id); setShowModalAlimento(false); }}
                   >
-                    <Ionicons name="trash-outline" size={16} color={HD.accent} />
+                    <MaterialIcons name="delete-outline" size={18} color={HD.accent} />
                     <Text style={s.modalRemoverTxt}>Remover da dieta</Text>
                   </TouchableOpacity>
                 )}

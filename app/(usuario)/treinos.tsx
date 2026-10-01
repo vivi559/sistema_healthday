@@ -14,6 +14,7 @@ import {
 } from "@/constants/Storage";
 import { HD, darkTheme, lightTheme } from "@/constants/theme";
 import { useTema } from "@/context/TemaContext";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -74,7 +75,7 @@ export default function TreinosScreen() {
     const hoje = new Date().toISOString().split("T")[0];
     await marcarTreinoConcluido(diaSelecionado, hoje);
     Alert.alert(
-      "🎉 Parabéns!",
+      "Parabéns!",
       `Treino de ${diaSelecionado} marcado como concluído!`,
     );
   }
@@ -88,7 +89,7 @@ export default function TreinosScreen() {
       return;
     }
     Alert.alert(
-      "🏋️ Solicitar Treino Personalizado",
+      "Solicitar Treino Personalizado",
       "Deseja solicitar um treino personalizado feito por um especialista?",
       [
         { text: "Cancelar", style: "cancel" },
@@ -103,7 +104,7 @@ export default function TreinosScreen() {
             });
             setJaSolicitou(true);
             Alert.alert(
-              "✅ Solicitação enviada!",
+              "Solicitação enviada!",
               "Um especialista irá criar seu treino personalizado em breve.",
             );
           },
@@ -135,7 +136,7 @@ export default function TreinosScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -143,7 +144,7 @@ export default function TreinosScreen() {
           <LogoHealthDay size={32} />
         </View>
         <TouchableOpacity style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <MaterialIcons name="menu" size={26} color={HD.primary} />
         </TouchableOpacity>
       </View>
 
@@ -181,7 +182,12 @@ export default function TreinosScreen() {
       >
         {!temTreino ? (
           <View style={styles.semTreino}>
-            <Text style={styles.semTreinoEmoji}>😴</Text>
+            <MaterialIcons
+              name="self-improvement"
+              size={56}
+              color={tema.subtext}
+              style={styles.semTreinoIcone}
+            />
             <Text style={[styles.semTreinoTxt, { color: tema.text }]}>
               Dia de descanso!
             </Text>
@@ -207,16 +213,20 @@ export default function TreinosScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.grupoHeaderLeft}>
-                      <Text style={styles.grupoIcone}>🏋️</Text>
+                      <MaterialIcons
+                        name="fitness-center"
+                        size={20}
+                        color={HD.primary}
+                      />
                       <Text style={[styles.grupoNome, { color: tema.text }]}>
                         {grupo.nome}
                       </Text>
                     </View>
-                    <Text
-                      style={[styles.grupoChevron, { color: tema.subtext }]}
-                    >
-                      {expandido ? "∧" : "∨"}
-                    </Text>
+                    <MaterialIcons
+                      name={expandido ? "expand-less" : "expand-more"}
+                      size={24}
+                      color={tema.subtext}
+                    />
                   </TouchableOpacity>
 
                   {expandido && (
@@ -233,7 +243,11 @@ export default function TreinosScreen() {
                               },
                             ]}
                           >
-                            <Text style={styles.exercicioIcone}>🤸</Text>
+                            <MaterialIcons
+                              name="sports-gymnastics"
+                              size={24}
+                              color={HD.primary}
+                            />
                           </View>
                           <View style={styles.exercicioInfo}>
                             <Text
@@ -279,7 +293,6 @@ export default function TreinosScreen() {
               onPress={handleConcluirTreino}
               activeOpacity={0.8}
             >
-              <Text style={styles.btnConcluirIcone}>✅</Text>
               <Text style={styles.btnConcluirTxt}>
                 Marcar treino como concluído
               </Text>
@@ -293,9 +306,6 @@ export default function TreinosScreen() {
               onPress={handleSolicitarTreino}
               activeOpacity={0.8}
             >
-              <Text style={styles.btnSolicitarIcone}>
-                {jaSolicitou ? "⏳" : "🩺"}
-              </Text>
               <Text style={styles.btnSolicitarTxt}>
                 {jaSolicitou
                   ? "Treino personalizado solicitado"
@@ -330,7 +340,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  notifIcon: { fontSize: 22 },
   notifBadge: {
     position: "absolute",
     top: 6,
@@ -348,7 +357,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuIcon: { fontSize: 22, color: HD.primary },
 
   diasRow: {
     flexDirection: "row",
@@ -372,7 +380,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20 },
 
   semTreino: { alignItems: "center", marginTop: 60 },
-  semTreinoEmoji: { fontSize: 56, marginBottom: 16 },
+  semTreinoIcone: { marginBottom: 16 },
   semTreinoTxt: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
   semTreinoSub: { fontSize: 14, textAlign: "center" },
 
@@ -393,9 +401,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   grupoHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  grupoIcone: { fontSize: 20 },
   grupoNome: { fontSize: 15, fontWeight: "700" },
-  grupoChevron: { fontSize: 16, fontWeight: "700" },
 
   exerciciosContainer: { paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
   exercicioCard: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -406,7 +412,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  exercicioIcone: { fontSize: 24 },
   exercicioInfo: { flex: 1 },
   exercicioNome: { fontSize: 14, fontWeight: "700", marginBottom: 8 },
   badgesRow: { flexDirection: "row", gap: 8 },
@@ -431,7 +436,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 8,
   },
-  btnConcluirIcone: { fontSize: 18 },
   btnConcluirTxt: { fontSize: 15, fontWeight: "700", color: HD.white },
 
   btnSolicitar: {
@@ -444,6 +448,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   btnSolicitarEnviado: { backgroundColor: "#9CA3AF" },
-  btnSolicitarIcone: { fontSize: 18 },
   btnSolicitarTxt: { fontSize: 15, fontWeight: "700", color: HD.white },
 });
