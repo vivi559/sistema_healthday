@@ -213,9 +213,7 @@ export default function AgendaScreen() {
           <Text style={styles.headerTitle}>Agenda</Text>
           <LogoHealthDay size={32} />
         </View>
-        <TouchableOpacity style={styles.menuBtn}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+        <View style={styles.menuBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -365,7 +363,7 @@ const styles = StyleSheet.create({
   notifBadge:   { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: HD.accent },
   headerCenter: { alignItems: 'center' },
   headerTitle:  { fontSize: 22, fontWeight: '800', color: HD.primary },
-  menuBtn:      { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  menuBtn:      { width: 40, height: 40 },
 
   scrollContent: { paddingHorizontal: 20 },
 

@@ -25,6 +25,7 @@ export interface User {
   objetivo?: 'perda' | 'ganho' | 'manutencao';
   temaDark?: boolean;
   questionarioFeito?: boolean; // ← se já respondeu o questionário
+  foto?: string;               // ← foto de perfil (data URL)
   fotoUri?: string;  // ← URI local da foto de perfil (base64)
   createdAt: string;
 }
@@ -153,6 +154,7 @@ const KEYS = {
   QUESTIONARIOS:   '@healthday:questionarios',
   SOLICITACOES:    '@healthday:solicitacoes',
   NOTICIAS:        '@healthday:noticias',
+  HISTORICO_PESO:  '@healthday:historicoPeso',
 };
 
 // ─── Dados iniciais (seed) ────────────────────────────────────────────────────
@@ -888,4 +890,40 @@ export async function getTema(): Promise<boolean> {
 
 export async function salvarTema(isDark: boolean): Promise<void> {
   await AsyncStorage.setItem(KEYS.TEMA, isDark ? 'dark' : 'light');
+}
+
+// ─── Histórico de peso (progressão) ───────────────────────────────────────────
+
+export interface RegistroPeso {
+  usuarioId: string;
+  data: string;   // AAAA-MM-DD
+  peso: number;   // kg
+  imc?: number;
+}
+
+export async function getHistoricoPeso(usuarioId: string): Promise<RegistroPeso[]> {
+  const data = await AsyncStorage.getItem(KEYS.HISTORICO_PESO);
+  const todos: RegistroPeso[] = data ? JSON.parse(data) : [];
+  return todos
+    .filter(r => r.usuarioId === usuarioId)
+    .sort((a, b) => (a.data < b.data ? 1 : -1)); // mais recente primeiro
+}
+
+// Um registro por dia: se já existe um hoje, ele é substituído
+export async function registrarPeso(
+  usuarioId: string,
+  peso: number,
+  alturaCm?: number
+): Promise<void> {
+  const data = await AsyncStorage.getItem(KEYS.HISTORICO_PESO);
+  const todos: RegistroPeso[] = data ? JSON.parse(data) : [];
+  const hoje = dataLocalISO();
+  const novo: RegistroPeso = {
+    usuarioId,
+    data: hoje,
+    peso,
+    imc: alturaCm ? calcularIMC(peso, alturaCm) : undefined,
+  };
+  const restantes = todos.filter(r => !(r.usuarioId === usuarioId && r.data === hoje));
+  await AsyncStorage.setItem(KEYS.HISTORICO_PESO, JSON.stringify([...restantes, novo]));
 }

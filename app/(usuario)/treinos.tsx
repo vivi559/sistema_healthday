@@ -208,9 +208,7 @@ export default function TreinosScreen() {
           <Text style={styles.headerTitle}>Treino</Text>
           <LogoHealthDay size={32} />
         </View>
-        <TouchableOpacity style={styles.menuBtn}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+        <View style={styles.menuBtn} />
       </View>
 
       {/* Dias da semana */}
