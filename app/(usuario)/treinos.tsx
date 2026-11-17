@@ -1,24 +1,30 @@
 /**
  * app/(usuario)/treinos.tsx
- * Tela de treinos com dias da semana, exercícios expansíveis e solicitar treino ao especialista.
+ * Tela de treinos com os 7 dias da semana, exercícios expansíveis,
+ * marcação de treino concluído (por semana) e solicitação ao especialista.
  */
 
 import LogoHealthDay from "@/components/LogoHealthDay";
 import {
   criarSolicitacao,
+  dataLocalISO,
+  desmarcarTreinoConcluido,
   getSolicitacoesUsuario,
   getTreinos,
   getUserAtual,
   marcarTreinoConcluido,
+  treinoConcluidoNaSemana,
   type TreinoDia,
 } from "@/constants/Storage";
 import { HD, darkTheme, lightTheme } from "@/constants/theme";
 import { useTema } from "@/context/TemaContext";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -27,41 +33,94 @@ import {
   View,
 } from "react-native";
 
-const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"] as const;
+const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"] as const;
 type Dia = (typeof DIAS)[number];
+
+const ROTULO: Record<Dia, string> = {
+  Seg: "Seg",
+  Ter: "Ter",
+  Qua: "Qua",
+  Qui: "Qui",
+  Sex: "Sex",
+  Sab: "Sáb",
+  Dom: "Dom",
+};
+
+const VERDE = "#16A34A";
+
+// getDay(): 0 = domingo ... 6 = sábado
+function diaDeHoje(): Dia {
+  const mapa: Dia[] = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+  return mapa[new Date().getDay()];
+}
+
+// Alert.alert não funciona no navegador, então usamos window.* na web
+function avisar(titulo: string, mensagem: string) {
+  if (Platform.OS === "web") window.alert(`${titulo}\n\n${mensagem}`);
+  else Alert.alert(titulo, mensagem);
+}
+
+function confirmar(titulo: string, mensagem: string, onOk: () => void) {
+  if (Platform.OS === "web") {
+    if (window.confirm(`${titulo}\n\n${mensagem}`)) onOk();
+    return;
+  }
+  Alert.alert(titulo, mensagem, [
+    { text: "Cancelar", style: "cancel" },
+    { text: "Solicitar", onPress: onOk },
+  ]);
+}
 
 export default function TreinosScreen() {
   const { temaDark } = useTema();
   const tema = temaDark ? darkTheme : lightTheme;
 
   const [treinos, setTreinos] = useState<TreinoDia[]>([]);
-  const [diaSelecionado, setDia] = useState<Dia>("Qua");
+  const [diaSelecionado, setDia] = useState<Dia>(diaDeHoje());
   const [expandidos, setExpandidos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
   const [userName, setUserName] = useState("");
   const [jaSolicitou, setJaSolicitou] = useState(false);
 
-  useEffect(() => {
-    async function carregar() {
-      const user = await getUserAtual();
-      if (user) {
-        setUserId(user.id);
-        setUserName(user.nome);
-        const sols = await getSolicitacoesUsuario(user.id);
-        const ativa = sols.find(
-          (s) => s.tipo === "treino" && s.status !== "concluida",
-        );
-        setJaSolicitou(!!ativa);
+  // Recarrega sempre que a aba ganha foco (ex.: depois do questionário)
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+      async function carregar() {
+        const user = await getUserAtual();
+        if (user && ativo) {
+          setUserId(user.id);
+          setUserName(user.nome);
+          const sols = await getSolicitacoesUsuario(user.id);
+          const ativa = sols.find(
+            (s) => s.tipo === "treino" && s.status !== "concluida",
+          );
+          setJaSolicitou(!!ativa);
+        }
+        const data = await getTreinos();
+        if (!ativo) return;
+        setTreinos(data);
+        setExpandidos((atual) => {
+          if (atual.length > 0) return atual;
+          const doDia = data.find((t) => t.diaSemana === diaSelecionado);
+          return doDia?.grupos[0] ? [doDia.grupos[0].id] : [];
+        });
+        setLoading(false);
       }
-      const data = await getTreinos();
-      setTreinos(data);
-      const diaAtual = data.find((t) => t.diaSemana === "Qua");
-      if (diaAtual?.grupos[0]) setExpandidos([diaAtual.grupos[0].id]);
-      setLoading(false);
-    }
-    carregar();
-  }, []);
+      carregar();
+      return () => {
+        ativo = false;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
+
+  function selecionarDia(dia: Dia) {
+    setDia(dia);
+    const diaData = treinos.find((t) => t.diaSemana === dia);
+    setExpandidos(diaData?.grupos[0] ? [diaData.grupos[0].id] : []);
+  }
 
   function toggleExpandido(grupoId: string) {
     setExpandidos((prev) =>
@@ -72,49 +131,51 @@ export default function TreinosScreen() {
   }
 
   async function handleConcluirTreino() {
-    const hoje = new Date().toISOString().split("T")[0];
-    await marcarTreinoConcluido(diaSelecionado, hoje);
-    Alert.alert(
-      "Parabéns!",
-      `Treino de ${diaSelecionado} marcado como concluído!`,
-    );
+    const atual = treinos.find((t) => t.diaSemana === diaSelecionado);
+    if (!atual) return;
+
+    if (treinoConcluidoNaSemana(atual)) {
+      await desmarcarTreinoConcluido(diaSelecionado);
+    } else {
+      await marcarTreinoConcluido(diaSelecionado, dataLocalISO());
+      avisar(
+        "Parabéns!",
+        `Treino de ${ROTULO[diaSelecionado]} marcado como concluído!`,
+      );
+    }
+    setTreinos(await getTreinos());
   }
 
-  async function handleSolicitarTreino() {
+  function handleSolicitarTreino() {
     if (jaSolicitou) {
-      Alert.alert(
+      avisar(
         "Já solicitado",
         "Você já tem uma solicitação de treino em andamento. Aguarde o especialista.",
       );
       return;
     }
-    Alert.alert(
+    confirmar(
       "Solicitar Treino Personalizado",
       "Deseja solicitar um treino personalizado feito por um especialista?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Solicitar",
-          onPress: async () => {
-            await criarSolicitacao({
-              usuarioId: userId,
-              usuarioNome: userName,
-              tipo: "treino",
-              mensagem: "Usuário solicitou treino personalizado pelo app.",
-            });
-            setJaSolicitou(true);
-            Alert.alert(
-              "Solicitação enviada!",
-              "Um especialista irá criar seu treino personalizado em breve.",
-            );
-          },
-        },
-      ],
+      async () => {
+        await criarSolicitacao({
+          usuarioId: userId,
+          usuarioNome: userName,
+          tipo: "treino",
+          mensagem: "Usuário solicitou treino personalizado pelo app.",
+        });
+        setJaSolicitou(true);
+        avisar(
+          "Solicitação enviada!",
+          "Um especialista irá criar seu treino personalizado em breve.",
+        );
+      },
     );
   }
 
   const treinoDia = treinos.find((t) => t.diaSemana === diaSelecionado);
-  const temTreino = treinoDia && treinoDia.grupos.length > 0;
+  const temTreino = !!treinoDia && treinoDia.grupos.length > 0;
+  const concluidoHoje = !!treinoDia && treinoConcluidoNaSemana(treinoDia);
 
   if (loading) {
     return (
@@ -136,44 +197,51 @@ export default function TreinosScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
+          <MaterialIcons
+            name="notifications-none"
+            size={24}
+            color={HD.primary}
+          />
           <View style={styles.notifBadge} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Treino</Text>
           <LogoHealthDay size={32} />
         </View>
-        <TouchableOpacity style={styles.menuBtn}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+        <View style={styles.menuBtn} />
       </View>
 
       {/* Dias da semana */}
       <View style={styles.diasRow}>
-        {DIAS.map((dia) => (
-          <TouchableOpacity
-            key={dia}
-            style={[
-              styles.diaBtn,
-              diaSelecionado === dia && styles.diaBtnActive,
-            ]}
-            onPress={() => {
-              setDia(dia);
-              const diaData = treinos.find((t) => t.diaSemana === dia);
-              if (diaData?.grupos[0]) setExpandidos([diaData.grupos[0].id]);
-              else setExpandidos([]);
-            }}
-          >
-            <Text
+        {DIAS.map((dia) => {
+          const treinoDoDia = treinos.find((t) => t.diaSemana === dia);
+          const temTreinoNoDia = !!treinoDoDia && treinoDoDia.grupos.length > 0;
+          const feito = !!treinoDoDia && treinoConcluidoNaSemana(treinoDoDia);
+          const selecionado = diaSelecionado === dia;
+
+          return (
+            <TouchableOpacity
+              key={dia}
               style={[
-                styles.diaTxt,
-                diaSelecionado === dia && styles.diaTxtActive,
+                styles.diaBtn,
+                !temTreinoNoDia && styles.diaBtnDescanso,
+                feito && styles.diaBtnConcluido,
+                selecionado && !feito && styles.diaBtnActive,
+                selecionado && styles.diaBtnSelecionado,
               ]}
+              onPress={() => selecionarDia(dia)}
+              activeOpacity={0.8}
             >
-              {dia}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {feito ? (
+                <MaterialIcons name="check" size={18} color={HD.white} />
+              ) : (
+                <Text style={styles.diaTxt}>{ROTULO[dia]}</Text>
+              )}
+              {feito && <Text style={styles.diaTxtMini}>{ROTULO[dia]}</Text>}
+              {temTreinoNoDia && !feito && <View style={styles.diaPonto} />}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -192,12 +260,28 @@ export default function TreinosScreen() {
               Dia de descanso!
             </Text>
             <Text style={[styles.semTreinoSub, { color: tema.subtext }]}>
-              Nenhum treino cadastrado para {diaSelecionado}.
+              Nenhum treino cadastrado para {ROTULO[diaSelecionado]}.
             </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.btnSolicitar,
+                styles.btnSolicitarLargo,
+                jaSolicitou && styles.btnSolicitarEnviado,
+              ]}
+              onPress={handleSolicitarTreino}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.btnSolicitarTxt}>
+                {jaSolicitou
+                  ? "Treino personalizado solicitado"
+                  : "Solicitar treino personalizado"}
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
-            {treinoDia.grupos.map((grupo) => {
+            {treinoDia!.grupos.map((grupo) => {
               const expandido = expandidos.includes(grupo.id);
               return (
                 <View
@@ -289,12 +373,17 @@ export default function TreinosScreen() {
 
             {/* Botões de ação */}
             <TouchableOpacity
-              style={styles.btnConcluir}
+              style={[styles.btnConcluir, concluidoHoje && styles.btnConcluido]}
               onPress={handleConcluirTreino}
               activeOpacity={0.8}
             >
+              {concluidoHoje && (
+                <MaterialIcons name="check-circle" size={20} color={HD.white} />
+              )}
               <Text style={styles.btnConcluirTxt}>
-                Marcar treino como concluído
+                {concluidoHoje
+                  ? "Treino concluído (toque para desfazer)"
+                  : "Marcar treino como concluído"}
               </Text>
             </TouchableOpacity>
 
@@ -358,31 +447,46 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  // 7 botões que dividem a largura da tela
   diasRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    paddingHorizontal: 20,
+    gap: 6,
+    paddingHorizontal: 16,
     marginBottom: 20,
   },
   diaBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    flex: 1,
+    maxWidth: 50,
+    aspectRatio: 1,
+    borderRadius: 25,
     backgroundColor: HD.dayInactive,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "transparent",
   },
+  diaBtnDescanso: { opacity: 0.5 },
   diaBtnActive: { backgroundColor: HD.primary },
-  diaTxt: { fontSize: 13, fontWeight: "700", color: HD.white },
-  diaTxtActive: { color: HD.white },
+  diaBtnConcluido: { backgroundColor: VERDE },
+  diaBtnSelecionado: { opacity: 1, borderColor: HD.primaryDark },
+  diaTxt: { fontSize: 12, fontWeight: "700", color: HD.white },
+  diaTxtMini: { fontSize: 8, fontWeight: "700", color: HD.white },
+  diaPonto: {
+    position: "absolute",
+    bottom: 5,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: HD.white,
+  },
 
   scrollContent: { paddingHorizontal: 20 },
 
-  semTreino: { alignItems: "center", marginTop: 60 },
+  semTreino: { alignItems: "center", marginTop: 40 },
   semTreinoIcone: { marginBottom: 16 },
   semTreinoTxt: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  semTreinoSub: { fontSize: 14, textAlign: "center" },
+  semTreinoSub: { fontSize: 14, textAlign: "center", marginBottom: 24 },
 
   grupoContainer: {
     borderRadius: 16,
@@ -436,6 +540,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 8,
   },
+  btnConcluido: { backgroundColor: VERDE },
   btnConcluirTxt: { fontSize: 15, fontWeight: "700", color: HD.white },
 
   btnSolicitar: {
@@ -447,6 +552,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 8,
   },
+  btnSolicitarLargo: { alignSelf: "stretch" },
   btnSolicitarEnviado: { backgroundColor: "#9CA3AF" },
   btnSolicitarTxt: { fontSize: 15, fontWeight: "700", color: HD.white },
 });

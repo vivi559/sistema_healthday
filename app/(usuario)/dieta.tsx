@@ -326,9 +326,7 @@ export default function DietaScreen() {
           <Text style={styles.headerTitle}>Dieta</Text>
           <LogoHealthDay size={32} />
         </View>
-        <TouchableOpacity style={styles.menuBtn}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+        <View style={styles.menuBtn} />
       </View>
 
       <ScrollView
@@ -554,12 +552,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { alignItems: "center" },
   headerTitle: { fontSize: 22, fontWeight: "800", color: HD.primary },
-  menuBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  menuBtn: { width: 40, height: 40 },
   backBtn: {
     flexDirection: "row",
     alignItems: "center",

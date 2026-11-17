@@ -73,9 +73,7 @@ export default function HomeScreen() {
           <LogoHealthDay size={32} />
         </View>
 
-        <TouchableOpacity style={styles.menuBtn}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+        <View style={styles.menuBtn} />
       </View>
 
       {/* Saudação */}
@@ -235,7 +233,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { alignItems: 'center' },
   headerTitle:  { fontSize: 22, fontWeight: '800', color: HD.primary },
-  menuBtn:      { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  menuBtn:      { width: 40, height: 40 },
 
   // Saudação
   saudacao: { fontSize: 16, fontWeight: '600', paddingHorizontal: 20, marginBottom: 8 },

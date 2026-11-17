@@ -25,6 +25,8 @@ export interface User {
   objetivo?: 'perda' | 'ganho' | 'manutencao';
   temaDark?: boolean;
   questionarioFeito?: boolean; // ← se já respondeu o questionário
+  foto?: string;               // ← foto de perfil (data URL)
+  fotoUri?: string;  // ← URI local da foto de perfil (base64)
   createdAt: string;
 }
 
@@ -152,6 +154,7 @@ const KEYS = {
   QUESTIONARIOS:   '@healthday:questionarios',
   SOLICITACOES:    '@healthday:solicitacoes',
   NOTICIAS:        '@healthday:noticias',
+  HISTORICO_PESO:  '@healthday:historicoPeso',
 };
 
 // ─── Dados iniciais (seed) ────────────────────────────────────────────────────
@@ -576,9 +579,18 @@ export function gerarDietaAutomatica(
 export function gerarTreinoAutomatico(
   r: RespostasQuestionario
 ): TreinoDia[] {
-  const diasPossiveis: TreinoDia['diaSemana'][] =
-    ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
-  const diasSelecionados = diasPossiveis.slice(0, r.diasTreino);
+  // Distribui os dias de treino ao longo da semana, com descanso entre eles
+  const distribuicao: Record<number, TreinoDia['diaSemana'][]> = {
+    1: ['Seg'],
+    2: ['Seg', 'Qui'],
+    3: ['Seg', 'Qua', 'Sex'],
+    4: ['Seg', 'Ter', 'Qui', 'Sex'],
+    5: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'],
+    6: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'],
+    7: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
+  };
+  const diasSelecionados =
+    distribuicao[Math.min(7, Math.max(1, r.diasTreino))];
 
   // Banco de exercícios por local
   const exerciciosAcademia: Record<string, Exercicio[]> = {
@@ -728,6 +740,37 @@ export async function marcarTreinoConcluido(
   await salvarTreinos(novos);
 }
 
+export async function desmarcarTreinoConcluido(
+  diaSemana: string
+): Promise<void> {
+  const treinos = await getTreinos();
+  const novos = treinos.map(t =>
+    t.diaSemana === diaSemana ? { ...t, concluido: false, data: undefined } : t
+  );
+  await salvarTreinos(novos);
+}
+
+// Data local no formato AAAA-MM-DD (toISOString usa UTC e pode errar o dia à noite)
+export function dataLocalISO(d: Date = new Date()): string {
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+// Segunda-feira da semana atual (início da semana)
+export function inicioDaSemana(d: Date = new Date()): string {
+  const x = new Date(d);
+  const diff = x.getDay() === 0 ? 6 : x.getDay() - 1;
+  x.setDate(x.getDate() - diff);
+  return dataLocalISO(x);
+}
+
+// O treino só conta como concluído se foi feito nesta semana
+export function treinoConcluidoNaSemana(t: TreinoDia): boolean {
+  return !!t.concluido && !!t.data && t.data >= inicioDaSemana();
+}
+
 // ─── Solicitações ao especialista ─────────────────────────────────────────────
 
 export async function criarSolicitacao(
@@ -847,4 +890,40 @@ export async function getTema(): Promise<boolean> {
 
 export async function salvarTema(isDark: boolean): Promise<void> {
   await AsyncStorage.setItem(KEYS.TEMA, isDark ? 'dark' : 'light');
+}
+
+// ─── Histórico de peso (progressão) ───────────────────────────────────────────
+
+export interface RegistroPeso {
+  usuarioId: string;
+  data: string;   // AAAA-MM-DD
+  peso: number;   // kg
+  imc?: number;
+}
+
+export async function getHistoricoPeso(usuarioId: string): Promise<RegistroPeso[]> {
+  const data = await AsyncStorage.getItem(KEYS.HISTORICO_PESO);
+  const todos: RegistroPeso[] = data ? JSON.parse(data) : [];
+  return todos
+    .filter(r => r.usuarioId === usuarioId)
+    .sort((a, b) => (a.data < b.data ? 1 : -1)); // mais recente primeiro
+}
+
+// Um registro por dia: se já existe um hoje, ele é substituído
+export async function registrarPeso(
+  usuarioId: string,
+  peso: number,
+  alturaCm?: number
+): Promise<void> {
+  const data = await AsyncStorage.getItem(KEYS.HISTORICO_PESO);
+  const todos: RegistroPeso[] = data ? JSON.parse(data) : [];
+  const hoje = dataLocalISO();
+  const novo: RegistroPeso = {
+    usuarioId,
+    data: hoje,
+    peso,
+    imc: alturaCm ? calcularIMC(peso, alturaCm) : undefined,
+  };
+  const restantes = todos.filter(r => !(r.usuarioId === usuarioId && r.data === hoje));
+  await AsyncStorage.setItem(KEYS.HISTORICO_PESO, JSON.stringify([...restantes, novo]));
 }
