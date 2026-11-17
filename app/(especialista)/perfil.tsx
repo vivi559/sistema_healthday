@@ -3,10 +3,12 @@
  * Tela de perfil do especialista — seguindo o padrão da tela de usuário.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
+import HeaderEspecialista from '@/components/HeaderEspecialista';
+import { ESPECIALIDADES } from '@/constants/CatalogoEspecialista';
 import {
   atualizarUsuario,
   getUserAtual,
+  getUsuarios,
   logout,
   salvarTema,
   type User,
@@ -14,8 +16,8 @@ import {
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState, type ComponentProps } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +34,9 @@ import {
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
+// O tipo User do Storage ainda não tem "especialidade"; o campo é salvo junto no JSON.
+type Especialista = User & { especialidade?: string };
+
 type MenuItem = {
   id: string;
   icone: IconName;
@@ -41,15 +46,20 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   { id: 'info', icone: 'person-outline', label: 'Informações do perfil' },
   { id: 'pacientes', icone: 'groups', label: 'Meus pacientes' },
-  { id: 'idioma', icone: 'language', label: 'Idioma' },
-  { id: 'privacidade', icone: 'lock-outline', label: 'Privacidade e Segurança' },
+  { id: 'privacidade', icone: 'lock-outline', label: 'Alterar senha' },
 ];
 
 export default function PerfilEspecialistaScreen() {
   const { temaDark, setTemaDark } = useTema();
   const tema = temaDark ? darkTheme : lightTheme;
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Especialista | null>(null);
+  const [alunos, setAlunos] = useState<User[]>([]);
+  const [modalPacientes, setModalPacientes] = useState(false);
+  const [modalSenha, setModalSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [senhaNova, setSenhaNova] = useState('');
+  const [senhaConfirma, setSenhaConfirma] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState(false);
 
@@ -65,12 +75,21 @@ export default function PerfilEspecialistaScreen() {
       if (u) {
         setNomeEdit(u.nome);
         setCidadeEdit(u.cidade || '');
-        setEspecialidade((u as any).especialidade || '');
+        setEspecialidade((u as Especialista).especialidade || '');
       }
       setLoading(false);
     }
     carregar();
   }, []);
+
+  // Lista de alunos para "Meus pacientes"
+  useFocusEffect(
+    useCallback(() => {
+      getUsuarios()
+        .then(l => setAlunos(l.filter(x => x.role === 'usuario')))
+        .catch(() => setAlunos([]));
+    }, [])
+  );
 
   async function handleTema(valor: boolean) {
     setTemaDark(valor);
@@ -80,15 +99,43 @@ export default function PerfilEspecialistaScreen() {
 
   async function handleSalvarInfo() {
     if (!user) return;
+    if (!nomeEdit.trim()) {
+      Alert.alert('Atenção', 'O nome não pode ficar vazio.');
+      return;
+    }
     setSaving(true);
     try {
-      const atualizado = { ...user, nome: nomeEdit, cidade: cidadeEdit, especialidade };
-      await atualizarUsuario(atualizado as User);
-      setUser(atualizado as User);
+      const atualizado: Especialista = {
+        ...user,
+        nome: nomeEdit.trim(),
+        cidade: cidadeEdit.trim(),
+        especialidade: especialidade.trim(),
+      };
+      await atualizarUsuario(atualizado);
+      setUser(atualizado);
       setModalInfo(false);
       Alert.alert('Salvo!', 'Informações atualizadas com sucesso.');
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAlterarSenha() {
+    if (!user) return;
+    if (senhaAtual !== user.senha) return Alert.alert('Atenção', 'A senha atual está incorreta.');
+    if (senhaNova.length < 6) return Alert.alert('Atenção', 'A nova senha deve ter pelo menos 6 caracteres.');
+    if (senhaNova !== senhaConfirma) return Alert.alert('Atenção', 'A confirmação não confere com a nova senha.');
+    setSaving(true);
+    try {
+      const atualizado: Especialista = { ...user, senha: senhaNova };
+      await atualizarUsuario(atualizado);
+      setUser(atualizado);
+      setModalSenha(false);
+      Alert.alert('Senha alterada!', 'Use a nova senha no próximo login.');
+    } catch {
+      Alert.alert('Erro', 'Não foi possível alterar a senha.');
     } finally {
       setSaving(false);
     }
@@ -112,11 +159,10 @@ export default function PerfilEspecialistaScreen() {
     if (id === 'info') {
       setModalInfo(true);
     } else if (id === 'pacientes') {
-      Alert.alert('Meus Pacientes', 'Gerencie seus pacientes nas abas de Treinos e Dieta.');
-    } else if (id === 'idioma') {
-      Alert.alert('Idioma', 'Português (Brasil)');
+      setModalPacientes(true);
     } else if (id === 'privacidade') {
-      Alert.alert('Privacidade', 'Seus dados são armazenados localmente com segurança.');
+      setSenhaAtual(''); setSenhaNova(''); setSenhaConfirma('');
+      setModalSenha(true);
     }
   }
 
@@ -135,21 +181,8 @@ export default function PerfilEspecialistaScreen() {
         backgroundColor={tema.background}
       />
 
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Perfil</Text>
-          <LogoHealthDay size={32} />
-        </View>
-
-        <TouchableOpacity style={styles.menuBtn} onPress={handleLogout}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
+      <View style={{ paddingTop: 40 }}>
+        <HeaderEspecialista titulo="Perfil" />
       </View>
 
       <ScrollView
@@ -172,7 +205,7 @@ export default function PerfilEspecialistaScreen() {
 
           <View style={styles.badgeRow}>
             <View style={styles.especialistaBadge}>
-              <Text style={styles.especialistaTxt}>Especialista</Text>
+              <Text style={styles.especialistaTxt}>{user?.especialidade?.trim() || 'Especialista'}</Text>
             </View>
           </View>
         </View>
@@ -226,6 +259,80 @@ export default function PerfilEspecialistaScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* ── Modal meus pacientes ── */}
+      <Modal
+        visible={modalPacientes}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalPacientes(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: tema.card }]}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitulo, { color: tema.text }]}>Meus Pacientes</Text>
+              <TouchableOpacity onPress={() => setModalPacientes(false)}>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
+              </TouchableOpacity>
+            </View>
+            {alunos.length === 0 ? (
+              <Text style={{ color: tema.subtext }}>Nenhum aluno cadastrado ainda.</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {alunos.map(a => (
+                  <View key={a.id} style={[styles.pacienteRow, { borderBottomColor: tema.border }]}>
+                    <Text style={[styles.pacienteNome, { color: tema.text }]}>{a.nome}</Text>
+                    <Text style={{ color: tema.subtext, fontSize: 12 }}>
+                      ID {a.id}{a.objetivo ? ` · ${a.objetivo === 'perda' ? 'Emagrecimento' : a.objetivo === 'ganho' ? 'Ganho de massa' : 'Manutenção'}` : ''}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal alterar senha ── */}
+      <Modal
+        visible={modalSenha}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalSenha(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: tema.card }]}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitulo, { color: tema.text }]}>Alterar senha</Text>
+              <TouchableOpacity onPress={() => setModalSenha(false)}>
+                <MaterialIcons name="close" size={24} color={tema.subtext} />
+              </TouchableOpacity>
+            </View>
+            {[
+              { label: 'Senha atual', valor: senhaAtual, set: setSenhaAtual },
+              { label: 'Nova senha', valor: senhaNova, set: setSenhaNova },
+              { label: 'Confirmar nova senha', valor: senhaConfirma, set: setSenhaConfirma },
+            ].map(c => (
+              <View key={c.label}>
+                <Text style={[styles.inputLabel, { color: tema.subtext }]}>{c.label}</Text>
+                <TextInput
+                  style={[styles.input, { color: tema.text, borderColor: tema.border, backgroundColor: tema.background }]}
+                  value={c.valor}
+                  onChangeText={c.set}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  placeholderTextColor={HD.placeholder}
+                />
+              </View>
+            ))}
+            <TouchableOpacity style={styles.btnSalvar} onPress={handleAlterarSenha} activeOpacity={0.8} disabled={saving}>
+              {saving
+                ? <ActivityIndicator color={HD.white} />
+                : <Text style={styles.btnSalvarTxt}>Alterar senha</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Modal editar informações ── */}
       <Modal
         visible={modalInfo}
@@ -259,6 +366,20 @@ export default function PerfilEspecialistaScreen() {
               placeholder="Ex: Nutricionista, Personal Trainer"
               placeholderTextColor={HD.placeholder}
             />
+            <View style={styles.chipsWrap}>
+              {ESPECIALIDADES.map(e => (
+                <TouchableOpacity
+                  key={e}
+                  style={[styles.chip, especialidade === e && styles.chipAtivo]}
+                  onPress={() => setEspecialidade(e)}
+                >
+                  <Text style={[styles.chipTxt, especialidade === e && { color: HD.white }]}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.dica, { color: tema.subtext }]}>
+              Personal gerencia a lista de exercícios; nutricionista gerencia a lista de alimentos.
+            </Text>
 
             <Text style={[styles.inputLabel, { color: tema.subtext }]}>Cidade</Text>
             <TextInput
@@ -412,6 +533,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitulo: { fontSize: 18, fontWeight: '800' },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: HD.divider },
+  chipAtivo: { backgroundColor: HD.primary },
+  chipTxt: { fontSize: 12, fontWeight: '600', color: HD.textMedium },
+  dica: { fontSize: 11, marginBottom: 14 },
+  pacienteRow: { paddingVertical: 12, borderBottomWidth: 1 },
+  pacienteNome: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
   inputLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
   input: {
     borderWidth: 1.5,
