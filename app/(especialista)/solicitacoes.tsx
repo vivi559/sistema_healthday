@@ -1,154 +1,142 @@
-/**
- * app/(especialista)/solicitacoes.tsx
- * Solicitações enviadas pelos alunos (treino / dieta).
- *
- * Usa getSolicitacoes / atualizarStatusSolicitacao de constants/Storage.ts — as mesmas
- * que as telas do usuário usam para criar a solicitação e checar se ainda está aberta
- * (status !== 'concluida'). O texto da resposta não existe no tipo SolicitacaoEspecialista,
- * por isso é guardado numa chave própria (RESPOSTAS_KEY).
- */
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   SafeAreaView, Alert, StatusBar, TextInput, Modal,
 } from 'react-native';
 import { HD } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
-import HeaderEspecialista from '@/components/HeaderEspecialista';
+import LogoHealthDay from '@/components/LogoHealthDay';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import {
-  atualizarStatusSolicitacao,
-  getSolicitacoes,
-  getUserAtual,
-  type SolicitacaoEspecialista,
-  type StatusSolicitacao,
-} from '@/constants/Storage';
 
-const RESPOSTAS_KEY = '@healthday:respostas_solicitacoes';
-
-type Resposta = { texto: string; especialistaId?: string; data: string };
-type Respostas = Record<string, Resposta>;
-type Filtro = 'todas' | StatusSolicitacao;
-
-const FILTROS: { id: Filtro; label: string }[] = [
-  { id: 'todas', label: 'Todas' },
-  { id: 'pendente', label: 'Pendentes' },
-  { id: 'em_andamento', label: 'Andamento' },
-  { id: 'concluida', label: 'Concluídas' },
-];
-
-const STATUS_LABEL: Record<StatusSolicitacao, string> = {
-  pendente: 'Pendente',
-  em_andamento: 'Em andamento',
-  concluida: 'Concluída',
+type Solicitacao = {
+  id: string;
+  usuarioId: string;
+  usuarioNome: string;
+  tipo: 'treino' | 'dieta';
+  grupoMuscular?: string;
+  mensagem: string;
+  status: 'pendente' | 'respondida';
+  resposta?: string;
+  dataCriacao: string;
 };
-
-const TIPO_LABEL: Record<SolicitacaoEspecialista['tipo'], string> = {
-  treino: 'Treino',
-  dieta: 'Dieta',
-  ambos: 'Treino + Dieta',
-};
-
-function formatarData(iso: string) {
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? iso : d.toLocaleDateString('pt-BR');
-}
 
 export default function EspecialistaSolicitacoes() {
   const { temaDark } = useTema();
   const s = styles(temaDark);
 
-  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoEspecialista[]>([]);
-  const [respostas, setRespostas] = useState<Respostas>({});
-  const [filtro, setFiltro] = useState<Filtro>('todas');
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [filtro, setFiltro] = useState<'todas' | 'pendente' | 'respondida'>('todas');
   const [modalVisible, setModalVisible] = useState(false);
-  const [solicitacaoAtiva, setSolicitacaoAtiva] = useState<SolicitacaoEspecialista | null>(null);
+  const [solicitacaoAtiva, setSolicitacaoAtiva] = useState<Solicitacao | null>(null);
   const [resposta, setResposta] = useState('');
 
   useFocusEffect(
     useCallback(() => {
-      carregar();
+      carregarSolicitacoes();
     }, [])
   );
 
-  const carregar = async () => {
+  const carregarSolicitacoes = async () => {
     try {
-      const [lista, rawResp] = await Promise.all([
-        getSolicitacoes(),
-        AsyncStorage.getItem(RESPOSTAS_KEY),
-      ]);
-      // mais recentes primeiro
-      setSolicitacoes([...lista].sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')));
-      setRespostas(rawResp ? JSON.parse(rawResp) : {});
+      const dados = await AsyncStorage.getItem('@solicitacoes');
+      if (dados) {
+        setSolicitacoes(JSON.parse(dados));
+      } else {
+        // Mock inicial
+        const mock: Solicitacao[] = [
+          {
+            id: '1', usuarioId: '001', usuarioNome: 'Jonas Duzzo',
+            tipo: 'treino', grupoMuscular: 'Inferior',
+            mensagem: 'Preciso de um treino focado em pernas para 3x por semana.',
+            status: 'pendente', dataCriacao: new Date().toLocaleDateString('pt-BR'),
+          },
+          {
+            id: '2', usuarioId: '002', usuarioNome: 'Maria Silva',
+            tipo: 'dieta',
+            mensagem: 'Gostaria de uma dieta para perda de peso, sou vegetariana.',
+            status: 'pendente', dataCriacao: new Date().toLocaleDateString('pt-BR'),
+          },
+          {
+            id: '3', usuarioId: '003', usuarioNome: 'Pedro Santos',
+            tipo: 'treino', grupoMuscular: 'Peito',
+            mensagem: 'Quero focar em ganho de massa no peito.',
+            status: 'respondida',
+            resposta: 'Preparei um treino específico para você, acesse a aba Treinos!',
+            dataCriacao: new Date().toLocaleDateString('pt-BR'),
+          },
+        ];
+        await AsyncStorage.setItem('@solicitacoes', JSON.stringify(mock));
+        setSolicitacoes(mock);
+      }
     } catch (e) {
       console.log(e);
     }
   };
 
-  const abrirModal = (solicitacao: SolicitacaoEspecialista) => {
+  const abrirModal = (solicitacao: Solicitacao) => {
     setSolicitacaoAtiva(solicitacao);
-    setResposta(respostas[solicitacao.id]?.texto || '');
+    setResposta(solicitacao.resposta || '');
     setModalVisible(true);
   };
 
-  const salvarResposta = async (sol: SolicitacaoEspecialista, texto: string) => {
-    const user = await getUserAtual();
-    const novas: Respostas = {
-      ...respostas,
-      [sol.id]: { texto, especialistaId: user?.id, data: new Date().toISOString() },
-    };
-    await AsyncStorage.setItem(RESPOSTAS_KEY, JSON.stringify(novas));
-    setRespostas(novas);
-  };
-
-  // Concluir = responde ao aluno e libera o aluno para fazer uma nova solicitação
-  const concluirSolicitacao = async () => {
+  const responderSolicitacao = async () => {
+    if (!resposta.trim()) return Alert.alert('Atenção', 'Digite uma resposta antes de confirmar.');
     if (!solicitacaoAtiva) return;
-    if (!resposta.trim()) return Alert.alert('Atenção', 'Digite uma resposta antes de concluir.');
 
     try {
-      await salvarResposta(solicitacaoAtiva, resposta.trim());
-      await atualizarStatusSolicitacao(solicitacaoAtiva.id, 'concluida');
+      const atualizadas = solicitacoes.map(s =>
+        s.id === solicitacaoAtiva.id
+          ? { ...s, status: 'respondida' as const, resposta }
+          : s
+      );
+      await AsyncStorage.setItem('@solicitacoes', JSON.stringify(atualizadas));
+      setSolicitacoes(atualizadas);
       setModalVisible(false);
-      await carregar();
-      Alert.alert('Concluída!', `Solicitação de ${solicitacaoAtiva.usuarioNome} concluída com sucesso.`);
+      Alert.alert('Respondido!', `Solicitação de ${solicitacaoAtiva.usuarioNome} respondida com sucesso.`);
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar a resposta.');
     }
   };
 
-  const iniciarAtendimento = async () => {
-    if (!solicitacaoAtiva) return;
-    try {
-      if (resposta.trim()) await salvarResposta(solicitacaoAtiva, resposta.trim());
-      await atualizarStatusSolicitacao(solicitacaoAtiva.id, 'em_andamento');
-      setModalVisible(false);
-      await carregar();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível atualizar a solicitação.');
-    }
-  };
+  const solicitacoesFiltradas = solicitacoes.filter(s => {
+    if (filtro === 'todas') return true;
+    return s.status === filtro;
+  });
 
-  const solicitacoesFiltradas = solicitacoes.filter(sol => filtro === 'todas' || sol.status === filtro);
+  const pendentes = solicitacoes.filter(s => s.status === 'pendente').length;
 
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar barStyle={temaDark ? 'light-content' : 'dark-content'} />
 
-      <HeaderEspecialista titulo="Solicitações" />
+      {/* Header */}
+      <View style={s.header}>
+        <View style={s.notifBadge}>
+          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
+          {pendentes > 0 && (
+            <View style={s.badge}><Text style={s.badgeTxt}>{pendentes}</Text></View>
+          )}
+        </View>
+        <View style={s.headerCenter}>
+          <Text style={s.headerTitle}>Solicitações</Text>
+          <LogoHealthDay size={28} />
+        </View>
+        <MaterialIcons name="menu" size={26} color={HD.primary} />
+      </View>
 
       {/* Filtros */}
       <View style={s.filtrosRow}>
-        {FILTROS.map(f => (
+        {(['todas', 'pendente', 'respondida'] as const).map(f => (
           <TouchableOpacity
-            key={f.id}
-            style={[s.filtroBtn, filtro === f.id && s.filtroBtnAtivo]}
-            onPress={() => setFiltro(f.id)}
+            key={f}
+            style={[s.filtroBtn, filtro === f && s.filtroBtnAtivo]}
+            onPress={() => setFiltro(f)}
           >
-            <Text style={[s.filtroTxt, filtro === f.id && s.filtroTxtAtivo]}>{f.label}</Text>
+            <Text style={[s.filtroTxt, filtro === f && s.filtroTxtAtivo]}>
+              {f === 'todas' ? 'Todas' : f === 'pendente' ? 'Pendentes' : 'Respondidas'}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -165,53 +153,52 @@ export default function EspecialistaSolicitacoes() {
             <Text style={s.vazioTxt}>Nenhuma solicitação aqui!</Text>
           </View>
         ) : (
-          solicitacoesFiltradas.map(sol => {
-            const resp = respostas[sol.id];
-            return (
-              <TouchableOpacity key={sol.id} style={s.card} onPress={() => abrirModal(sol)}>
-                <View style={s.cardHeader}>
-                  <View style={s.cardLeft}>
-                    <View style={[s.tipoBadge, sol.tipo === 'dieta' ? s.tipoBadgeDieta : s.tipoBadgeTreino]}>
-                      <Text style={s.tipoBadgeTxt}>{TIPO_LABEL[sol.tipo]}</Text>
-                    </View>
-                    <Text style={s.cardNome}>{sol.usuarioNome}</Text>
-                    <Text style={s.cardId}>ID: {sol.usuarioId}</Text>
+          solicitacoesFiltradas.map(sol => (
+            <TouchableOpacity key={sol.id} style={s.card} onPress={() => abrirModal(sol)}>
+              <View style={s.cardHeader}>
+                <View style={s.cardLeft}>
+                  <View style={[s.tipoBadge, sol.tipo === 'treino' ? s.tipoBadgeTreino : s.tipoBadgeDieta]}>
+                    <Text style={s.tipoBadgeTxt}>{sol.tipo === 'treino' ? 'Treino' : 'Dieta'}</Text>
                   </View>
-                  <View style={[s.statusBadge, sol.status === 'concluida' ? s.statusRespondido : s.statusPendente]}>
-                    <Text style={s.statusTxt}>{STATUS_LABEL[sol.status]}</Text>
-                  </View>
+                  <Text style={s.cardNome}>{sol.usuarioNome}</Text>
+                  <Text style={s.cardId}>ID: {sol.usuarioId}</Text>
                 </View>
-
-                {!!sol.mensagem && (
-                  <Text style={s.cardMensagem} numberOfLines={2}>{sol.mensagem}</Text>
-                )}
-
-                {resp && (
-                  <View style={s.respostaBox}>
-                    <Text style={s.respostaTitulo}>Sua resposta:</Text>
-                    <Text style={s.respostaTxt} numberOfLines={2}>{resp.texto}</Text>
-                  </View>
-                )}
-
-                <View style={s.cardFooter}>
-                  <Text style={s.cardData}>{formatarData(sol.criadoEm)}</Text>
-                  <Text style={s.cardAcao}>
-                    {sol.status === 'concluida' ? 'Toque para editar a resposta' : 'Toque para atender'}
-                  </Text>
+                <View style={[s.statusBadge, sol.status === 'pendente' ? s.statusPendente : s.statusRespondido]}>
+                  <Text style={s.statusTxt}>{sol.status === 'pendente' ? 'Pendente' : 'Respondida'}</Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })
+              </View>
+
+              {sol.grupoMuscular && (
+                <Text style={s.grupoMuscular}>Grupo Muscular: {sol.grupoMuscular}</Text>
+              )}
+
+              <Text style={s.cardMensagem} numberOfLines={2}>{sol.mensagem}</Text>
+
+              {sol.resposta && (
+                <View style={s.respostaBox}>
+                  <Text style={s.respostaTitulo}>Sua resposta:</Text>
+                  <Text style={s.respostaTxt} numberOfLines={2}>{sol.resposta}</Text>
+                </View>
+              )}
+
+              <View style={s.cardFooter}>
+                <Text style={s.cardData}>{sol.dataCriacao}</Text>
+                <Text style={s.cardAcao}>
+                  {sol.status === 'pendente' ? 'Toque para responder' : 'Toque para editar'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Modal resposta */}
-      <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
+      <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitulo}>Atender Solicitação</Text>
+              <Text style={s.modalTitulo}>Responder Solicitação</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <MaterialIcons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
               </TouchableOpacity>
@@ -219,12 +206,13 @@ export default function EspecialistaSolicitacoes() {
 
             {solicitacaoAtiva && (
               <>
-                <Text style={s.modalAluno}>
-                  {solicitacaoAtiva.usuarioNome} · {TIPO_LABEL[solicitacaoAtiva.tipo]}
-                </Text>
+                <Text style={s.modalAluno}>{solicitacaoAtiva.usuarioNome}</Text>
                 <View style={s.modalMensagemBox}>
                   <Text style={s.modalMensagemLabel}>Mensagem do aluno:</Text>
-                  <Text style={s.modalMensagem}>{solicitacaoAtiva.mensagem || 'Sem mensagem.'}</Text>
+                  <Text style={s.modalMensagem}>{solicitacaoAtiva.mensagem}</Text>
+                  {solicitacaoAtiva.grupoMuscular && (
+                    <Text style={s.modalGrupo}>Grupo: {solicitacaoAtiva.grupoMuscular}</Text>
+                  )}
                 </View>
 
                 <Text style={s.modalLabel}>Sua Resposta:</Text>
@@ -238,14 +226,8 @@ export default function EspecialistaSolicitacoes() {
                   onChangeText={setResposta}
                 />
 
-                {solicitacaoAtiva.status === 'pendente' && (
-                  <TouchableOpacity style={s.modalBtnSec} onPress={iniciarAtendimento}>
-                    <Text style={s.modalBtnSecTxt}>Marcar como em andamento</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={s.modalBtn} onPress={concluirSolicitacao}>
-                  <Text style={s.modalBtnTxt}>Concluir e Responder</Text>
+                <TouchableOpacity style={s.modalBtn} onPress={responderSolicitacao}>
+                  <Text style={s.modalBtnTxt}>Confirmar Resposta</Text>
                   <View style={s.checkCircle}>
                     <MaterialIcons name="check" size={20} color="#fff" />
                   </View>
@@ -270,7 +252,7 @@ const styles = (temaDark: boolean) => StyleSheet.create({
   filtrosRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   filtroBtn: { flex: 1, paddingVertical: 8, borderRadius: 20, backgroundColor: temaDark ? '#2a2a2a' : '#ddd', alignItems: 'center' },
   filtroBtnAtivo: { backgroundColor: HD.primary },
-  filtroTxt: { fontSize: 11, color: temaDark ? '#aaa' : '#555', fontWeight: '600' },
+  filtroTxt: { fontSize: 12, color: temaDark ? '#aaa' : '#555', fontWeight: '600' },
   filtroTxtAtivo: { color: '#fff' },
   contador: { paddingHorizontal: 20, fontSize: 12, color: '#999', marginBottom: 8 },
   scroll: { flex: 1, paddingHorizontal: 16 },
@@ -309,8 +291,6 @@ const styles = (temaDark: boolean) => StyleSheet.create({
   modalGrupo: { marginTop: 6, fontSize: 12, color: HD.secondary, fontWeight: '600' },
   modalLabel: { fontSize: 13, fontWeight: '600', color: temaDark ? '#ccc' : '#333', marginBottom: 8 },
   modalInput: { backgroundColor: temaDark ? '#2a2a2a' : '#f5f5f5', borderRadius: 12, padding: 14, fontSize: 14, color: temaDark ? '#eee' : '#222', minHeight: 100, textAlignVertical: 'top', marginBottom: 16 },
-  modalBtnSec: { borderRadius: 30, paddingVertical: 12, alignItems: 'center', marginBottom: 10, borderWidth: 1.5, borderColor: HD.primary },
-  modalBtnSecTxt: { color: HD.primary, fontSize: 14, fontWeight: '700' },
   modalBtn: { backgroundColor: HD.primary, borderRadius: 30, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
   modalBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
   checkCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
