@@ -40,7 +40,7 @@ export default function LoginScreen() {
       if (user.role === "admin") {
         router.replace("/(admin)/dashboard");
       } else if (user.role === "especialista") {
-        router.replace("/(especialista)/treinos");
+        router.replace("/(especialista)/noticias");
       } else {
         // Usuário comum: verifica se já fez o questionário
         if (!user.questionarioFeito) {

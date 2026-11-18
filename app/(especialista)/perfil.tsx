@@ -3,12 +3,12 @@
  * Tela de perfil do especialista — seguindo o padrão da tela de usuário.
  */
 
-import LogoHealthDay from '@/components/LogoHealthDay';
+import { AvisosNaTela, Cabecalho, LARGURA_MAXIMA, avisar, confirmar } from '@/components/EspecialistaUI';
+import { getAlunos } from '@/constants/EspecialistaStorage';
 import {
   atualizarUsuario,
   getUserAtual,
   logout,
-  salvarTema,
   type User,
 } from '@/constants/Storage';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
@@ -18,10 +18,8 @@ import { router } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -31,6 +29,9 @@ import {
 } from 'react-native';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
+
+// O especialista guarda a especialidade junto com os dados do usuário
+type Especialista = User & { especialidade?: string };
 
 type MenuItem = {
   id: string;
@@ -49,7 +50,7 @@ export default function PerfilEspecialistaScreen() {
   const { temaDark, setTemaDark } = useTema();
   const tema = temaDark ? darkTheme : lightTheme;
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Especialista | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState(false);
 
@@ -60,12 +61,12 @@ export default function PerfilEspecialistaScreen() {
 
   useEffect(() => {
     async function carregar() {
-      const u = await getUserAtual();
+      const u: Especialista | null = await getUserAtual();
       setUser(u);
       if (u) {
         setNomeEdit(u.nome);
         setCidadeEdit(u.cidade || '');
-        setEspecialidade((u as any).especialidade || '');
+        setEspecialidade(u.especialidade || '');
       }
       setLoading(false);
     }
@@ -73,50 +74,56 @@ export default function PerfilEspecialistaScreen() {
   }, []);
 
   async function handleTema(valor: boolean) {
-    setTemaDark(valor);
-    await salvarTema(valor);
-    if (user) await atualizarUsuario({ ...user, temaDark: valor });
+    await setTemaDark(valor); // já salva a preferência
+    if (user) {
+      const atualizado = { ...user, temaDark: valor };
+      await atualizarUsuario(atualizado);
+      setUser(atualizado);
+    }
   }
 
   async function handleSalvarInfo() {
     if (!user) return;
+    if (!nomeEdit.trim()) return avisar('Atenção', 'Informe o seu nome.');
     setSaving(true);
     try {
-      const atualizado = { ...user, nome: nomeEdit, cidade: cidadeEdit, especialidade };
-      await atualizarUsuario(atualizado as User);
-      setUser(atualizado as User);
+      const atualizado: Especialista = {
+        ...user,
+        nome: nomeEdit.trim(),
+        cidade: cidadeEdit.trim(),
+        especialidade: especialidade.trim(),
+      };
+      await atualizarUsuario(atualizado);
+      setUser(atualizado);
       setModalInfo(false);
-      Alert.alert('Salvo!', 'Informações atualizadas com sucesso.');
+      avisar('Salvo!', 'Informações atualizadas com sucesso.');
     } catch {
-      Alert.alert('Erro', 'Não foi possível salvar.');
+      avisar('Erro', 'Não foi possível salvar.');
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleLogout() {
-    Alert.alert('Sair', 'Deseja sair da conta?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/welcome');
-        },
-      },
-    ]);
+  function handleLogout() {
+    confirmar('Sair', 'Deseja sair da conta?', async () => {
+      await logout();
+      router.replace('/(auth)/welcome');
+    }, 'Sair');
   }
 
-  function handleMenuItem(id: string) {
+  async function handleMenuItem(id: string) {
     if (id === 'info') {
       setModalInfo(true);
     } else if (id === 'pacientes') {
-      Alert.alert('Meus Pacientes', 'Gerencie seus pacientes nas abas de Treinos e Dieta.');
+      const total = (await getAlunos()).length;
+      avisar(
+        'Meus pacientes',
+        `${total} aluno(s) cadastrado(s) no app. Monte os treinos e as dietas de cada um nas abas Treinos e Dieta.`,
+      );
     } else if (id === 'idioma') {
-      Alert.alert('Idioma', 'Português (Brasil)');
+      avisar('Idioma', 'Português (Brasil)');
     } else if (id === 'privacidade') {
-      Alert.alert('Privacidade', 'Seus dados são armazenados localmente com segurança.');
+      avisar('Privacidade', 'Seus dados são armazenados localmente com segurança.');
     }
   }
 
@@ -130,27 +137,7 @@ export default function PerfilEspecialistaScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: tema.background }]}>
-      <StatusBar
-        barStyle={temaDark ? 'light-content' : 'dark-content'}
-        backgroundColor={tema.background}
-      />
-
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Perfil</Text>
-          <LogoHealthDay size={32} />
-        </View>
-
-        <TouchableOpacity style={styles.menuBtn} onPress={handleLogout}>
-          <MaterialIcons name="menu" size={26} color={HD.primary} />
-        </TouchableOpacity>
-      </View>
+      <Cabecalho titulo="Perfil" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -172,7 +159,7 @@ export default function PerfilEspecialistaScreen() {
 
           <View style={styles.badgeRow}>
             <View style={styles.especialistaBadge}>
-              <Text style={styles.especialistaTxt}>Especialista</Text>
+              <Text style={styles.especialistaTxt}>{user?.especialidade || 'Especialista'}</Text>
             </View>
           </View>
         </View>
@@ -223,7 +210,8 @@ export default function PerfilEspecialistaScreen() {
           <Text style={styles.logoutTxt}>Sair da conta</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 100 }} />
+        {/* Espaço para a barra de abas não cobrir o último botão */}
+        <View style={{ height: 130 }} />
       </ScrollView>
 
       {/* ── Modal editar informações ── */}
@@ -282,6 +270,8 @@ export default function PerfilEspecialistaScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        {/* O modal cobre a tela, então os avisos precisam ser desenhados aqui dentro também */}
+        <AvisosNaTela ativo={modalInfo} />
       </Modal>
     </View>
   );
@@ -291,35 +281,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 52,
-    paddingBottom: 12,
+  scrollContent: {
+    width: '100%', maxWidth: LARGURA_MAXIMA + 40, alignSelf: 'center', // não estica no navegador
+    paddingHorizontal: 20, paddingTop: 8, gap: 16,
   },
-  notifBtn: {
-    position: 'relative',
-    width: 40, height: 40,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  notifBadge: {
-    position: 'absolute',
-    top: 6, right: 6,
-    width: 8, height: 8,
-    borderRadius: 4,
-    backgroundColor: HD.accent,
-  },
-  headerCenter: { alignItems: 'center', gap: 4 },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: HD.primary,
-  },
-  menuBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
   perfilCard: {
     borderRadius: 20,
@@ -397,6 +362,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
+    maxWidth: 480,
     borderRadius: 24,
     padding: 24,
     elevation: 6,

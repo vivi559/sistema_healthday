@@ -46,7 +46,7 @@ export default function SplashScreen() {
       } else if (userAtual.role === 'admin') {
         router.replace('/(admin)/dashboard');
       } else if (userAtual.role === 'especialista') {
-        router.replace('/(especialista)/treinos');
+        router.replace('/(especialista)/noticias');
       } else {
         router.replace('/(usuario)/home');
       }

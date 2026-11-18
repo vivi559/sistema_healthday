@@ -1,188 +1,149 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  SafeAreaView, Alert, StatusBar, TextInput, Modal,
-} from 'react-native';
-import { HD } from '@/constants/theme';
-import { useTema } from '@/context/TemaContext';
-import LogoHealthDay from '@/components/LogoHealthDay';
-import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router';
+/**
+ * app/(especialista)/solicitacoes.tsx
+ * Solicitações de treino/dieta enviadas pelos alunos (as mesmas criadas nas telas do usuário).
+ */
 
-type Solicitacao = {
-  id: string;
-  usuarioId: string;
-  usuarioNome: string;
-  tipo: 'treino' | 'dieta';
-  grupoMuscular?: string;
-  mensagem: string;
-  status: 'pendente' | 'respondida';
-  resposta?: string;
-  dataCriacao: string;
+import {
+  Botao, Cabecalho, Campo, Chips, Folha, LARGURA_MAXIMA, Vazio, avisar, useCores, useEstilos,
+} from '@/components/EspecialistaUI';
+import { getRespostas, salvarResposta } from '@/constants/EspecialistaStorage';
+import {
+  atualizarStatusSolicitacao, getSolicitacoes,
+  type SolicitacaoEspecialista, type StatusSolicitacao,
+} from '@/constants/Storage';
+import { HD } from '@/constants/theme';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+type Filtro = 'todas' | StatusSolicitacao;
+
+const FILTROS: Filtro[] = ['todas', 'pendente', 'em_andamento', 'concluida'];
+const ROTULO_FILTRO: Record<Filtro, string> = {
+  todas: 'Todas', pendente: 'Pendentes', em_andamento: 'Em andamento', concluida: 'Concluídas',
 };
 
+const STATUS: StatusSolicitacao[] = ['pendente', 'em_andamento', 'concluida'];
+const ROTULO_STATUS: Record<StatusSolicitacao, string> = {
+  pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída',
+};
+const ORDEM_STATUS: Record<StatusSolicitacao, number> = { pendente: 0, em_andamento: 1, concluida: 2 };
+
+const ROTULO_TIPO: Record<SolicitacaoEspecialista['tipo'], string> = {
+  treino: 'Treino', dieta: 'Dieta', ambos: 'Treino e dieta',
+};
+
+function formatarData(iso: string) {
+  const data = new Date(iso);
+  return Number.isNaN(data.getTime()) ? '' : data.toLocaleDateString('pt-BR');
+}
+
 export default function EspecialistaSolicitacoes() {
-  const { temaDark } = useTema();
-  const s = styles(temaDark);
+  const c = useCores();
+  const ui = useEstilos();
+  const s = useMemo(() => estilos(c.temaDark), [c.temaDark]);
 
-  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
-  const [filtro, setFiltro] = useState<'todas' | 'pendente' | 'respondida'>('todas');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [solicitacaoAtiva, setSolicitacaoAtiva] = useState<Solicitacao | null>(null);
-  const [resposta, setResposta] = useState('');
+  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoEspecialista[]>([]);
+  const [respostas, setRespostas] = useState<Record<string, string>>({});
+  const [filtro, setFiltro] = useState<Filtro>('todas');
 
-  useFocusEffect(
-    useCallback(() => {
-      carregarSolicitacoes();
-    }, [])
-  );
+  const [ativa, setAtiva] = useState<SolicitacaoEspecialista | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [statusEdit, setStatusEdit] = useState<StatusSolicitacao>('pendente');
+  const [respostaEdit, setRespostaEdit] = useState('');
 
-  const carregarSolicitacoes = async () => {
+  const carregar = useCallback(async () => {
+    const [todas, textos] = await Promise.all([getSolicitacoes(), getRespostas()]);
+    setSolicitacoes(todas);
+    setRespostas(textos);
+  }, []);
+
+  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
+
+  // Pendentes primeiro; dentro do mesmo status, as mais recentes primeiro
+  const lista = solicitacoes
+    .filter(sol => filtro === 'todas' || sol.status === filtro)
+    .sort((a, b) =>
+      ORDEM_STATUS[a.status] - ORDEM_STATUS[b.status] || (a.criadoEm < b.criadoEm ? 1 : -1),
+    );
+  const pendentes = solicitacoes.filter(sol => sol.status === 'pendente').length;
+
+  function abrir(sol: SolicitacaoEspecialista) {
+    setAtiva(sol);
+    setStatusEdit(sol.status);
+    setRespostaEdit(respostas[sol.id] ?? '');
+    setModalAberto(true);
+  }
+
+  async function salvar() {
+    if (!ativa) return;
     try {
-      const dados = await AsyncStorage.getItem('@solicitacoes');
-      if (dados) {
-        setSolicitacoes(JSON.parse(dados));
-      } else {
-        // Mock inicial
-        const mock: Solicitacao[] = [
-          {
-            id: '1', usuarioId: '001', usuarioNome: 'Jonas Duzzo',
-            tipo: 'treino', grupoMuscular: 'Inferior',
-            mensagem: 'Preciso de um treino focado em pernas para 3x por semana.',
-            status: 'pendente', dataCriacao: new Date().toLocaleDateString('pt-BR'),
-          },
-          {
-            id: '2', usuarioId: '002', usuarioNome: 'Maria Silva',
-            tipo: 'dieta',
-            mensagem: 'Gostaria de uma dieta para perda de peso, sou vegetariana.',
-            status: 'pendente', dataCriacao: new Date().toLocaleDateString('pt-BR'),
-          },
-          {
-            id: '3', usuarioId: '003', usuarioNome: 'Pedro Santos',
-            tipo: 'treino', grupoMuscular: 'Peito',
-            mensagem: 'Quero focar em ganho de massa no peito.',
-            status: 'respondida',
-            resposta: 'Preparei um treino específico para você, acesse a aba Treinos!',
-            dataCriacao: new Date().toLocaleDateString('pt-BR'),
-          },
-        ];
-        await AsyncStorage.setItem('@solicitacoes', JSON.stringify(mock));
-        setSolicitacoes(mock);
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const abrirModal = (solicitacao: Solicitacao) => {
-    setSolicitacaoAtiva(solicitacao);
-    setResposta(solicitacao.resposta || '');
-    setModalVisible(true);
-  };
-
-  const responderSolicitacao = async () => {
-    if (!resposta.trim()) return Alert.alert('Atenção', 'Digite uma resposta antes de confirmar.');
-    if (!solicitacaoAtiva) return;
-
-    try {
-      const atualizadas = solicitacoes.map(s =>
-        s.id === solicitacaoAtiva.id
-          ? { ...s, status: 'respondida' as const, resposta }
-          : s
-      );
-      await AsyncStorage.setItem('@solicitacoes', JSON.stringify(atualizadas));
-      setSolicitacoes(atualizadas);
-      setModalVisible(false);
-      Alert.alert('Respondido!', `Solicitação de ${solicitacaoAtiva.usuarioNome} respondida com sucesso.`);
+      await atualizarStatusSolicitacao(ativa.id, statusEdit);
+      await salvarResposta(ativa.id, respostaEdit);
+      await carregar();
+      setModalAberto(false);
+      avisar('Solicitação atualizada', `${ativa.usuarioNome}: ${ROTULO_STATUS[statusEdit].toLowerCase()}.`);
     } catch {
-      Alert.alert('Erro', 'Não foi possível salvar a resposta.');
+      avisar('Erro', 'Não foi possível salvar a solicitação.');
     }
-  };
+  }
 
-  const solicitacoesFiltradas = solicitacoes.filter(s => {
-    if (filtro === 'todas') return true;
-    return s.status === filtro;
-  });
-
-  const pendentes = solicitacoes.filter(s => s.status === 'pendente').length;
+  const estiloStatus = (status: StatusSolicitacao) =>
+    status === 'pendente' ? s.statusPendente : status === 'em_andamento' ? s.statusAndamento : s.statusConcluida;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <StatusBar barStyle={temaDark ? 'light-content' : 'dark-content'} />
+    <View style={ui.container}>
+      <Cabecalho titulo="Solicitações" pendentes={pendentes} />
 
-      {/* Header */}
-      <View style={s.header}>
-        <View style={s.notifBadge}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          {pendentes > 0 && (
-            <View style={s.badge}><Text style={s.badgeTxt}>{pendentes}</Text></View>
-          )}
-        </View>
-        <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Solicitações</Text>
-          <LogoHealthDay size={28} />
-        </View>
-        <MaterialIcons name="menu" size={26} color={HD.primary} />
+      <View style={s.filtros}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtrosConteudo}>
+          <Chips
+            opcoes={FILTROS}
+            valor={filtro}
+            onChange={v => setFiltro(v as Filtro)}
+            rotulo={v => ROTULO_FILTRO[v as Filtro]}
+          />
+        </ScrollView>
       </View>
 
-      {/* Filtros */}
-      <View style={s.filtrosRow}>
-        {(['todas', 'pendente', 'respondida'] as const).map(f => (
-          <TouchableOpacity
-            key={f}
-            style={[s.filtroBtn, filtro === f && s.filtroBtnAtivo]}
-            onPress={() => setFiltro(f)}
-          >
-            <Text style={[s.filtroTxt, filtro === f && s.filtroTxtAtivo]}>
-              {f === 'todas' ? 'Todas' : f === 'pendente' ? 'Pendentes' : 'Respondidas'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={ui.scroll}>
+        <Text style={ui.subtexto}>
+          {lista.length === 1 ? '1 solicitação' : `${lista.length} solicitações`}
+        </Text>
 
-      {/* Contador */}
-      <Text style={s.contador}>
-        {solicitacoesFiltradas.length} solicitação(ões)
-      </Text>
-
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-        {solicitacoesFiltradas.length === 0 ? (
-          <View style={s.vazio}>
-            <MaterialIcons name="check-circle-outline" size={60} color={HD.primary} />
-            <Text style={s.vazioTxt}>Nenhuma solicitação aqui!</Text>
-          </View>
+        {lista.length === 0 ? (
+          <Vazio
+            icone="check-circle-outline"
+            texto={
+              filtro === 'todas'
+                ? 'Nenhuma solicitação por enquanto. Quando um aluno pedir um treino ou dieta personalizados, o pedido aparece aqui.'
+                : 'Nenhuma solicitação com esse status.'
+            }
+          />
         ) : (
-          solicitacoesFiltradas.map(sol => (
-            <TouchableOpacity key={sol.id} style={s.card} onPress={() => abrirModal(sol)}>
-              <View style={s.cardHeader}>
-                <View style={s.cardLeft}>
-                  <View style={[s.tipoBadge, sol.tipo === 'treino' ? s.tipoBadgeTreino : s.tipoBadgeDieta]}>
-                    <Text style={s.tipoBadgeTxt}>{sol.tipo === 'treino' ? 'Treino' : 'Dieta'}</Text>
-                  </View>
-                  <Text style={s.cardNome}>{sol.usuarioNome}</Text>
-                  <Text style={s.cardId}>ID: {sol.usuarioId}</Text>
+          lista.map(sol => (
+            <TouchableOpacity key={sol.id} style={ui.card} onPress={() => abrir(sol)} activeOpacity={0.8}>
+              <View style={s.cardTopo}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardNome} numberOfLines={1}>{sol.usuarioNome}</Text>
+                  <Text style={ui.subtexto}>ID {sol.usuarioId}  ·  {ROTULO_TIPO[sol.tipo] ?? sol.tipo}</Text>
                 </View>
-                <View style={[s.statusBadge, sol.status === 'pendente' ? s.statusPendente : s.statusRespondido]}>
-                  <Text style={s.statusTxt}>{sol.status === 'pendente' ? 'Pendente' : 'Respondida'}</Text>
+                <View style={[s.status, estiloStatus(sol.status)]}>
+                  <Text style={s.statusTxt}>{ROTULO_STATUS[sol.status] ?? sol.status}</Text>
                 </View>
               </View>
 
-              {sol.grupoMuscular && (
-                <Text style={s.grupoMuscular}>Grupo Muscular: {sol.grupoMuscular}</Text>
-              )}
+              {!!sol.mensagem && <Text style={[ui.texto, s.mensagem]} numberOfLines={2}>{sol.mensagem}</Text>}
 
-              <Text style={s.cardMensagem} numberOfLines={2}>{sol.mensagem}</Text>
-
-              {sol.resposta && (
+              {!!respostas[sol.id] && (
                 <View style={s.respostaBox}>
-                  <Text style={s.respostaTitulo}>Sua resposta:</Text>
-                  <Text style={s.respostaTxt} numberOfLines={2}>{sol.resposta}</Text>
+                  <Text style={s.respostaTitulo}>Sua resposta</Text>
+                  <Text style={ui.subtexto} numberOfLines={2}>{respostas[sol.id]}</Text>
                 </View>
               )}
 
-              <View style={s.cardFooter}>
-                <Text style={s.cardData}>{sol.dataCriacao}</Text>
+              <View style={s.cardRodape}>
+                <Text style={ui.subtexto}>{formatarData(sol.criadoEm)}</Text>
                 <Text style={s.cardAcao}>
                   {sol.status === 'pendente' ? 'Toque para responder' : 'Toque para editar'}
                 </Text>
@@ -190,108 +151,75 @@ export default function EspecialistaSolicitacoes() {
             </TouchableOpacity>
           ))
         )}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Modal resposta */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalBox}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitulo}>Responder Solicitação</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <MaterialIcons name="close" size={24} color={temaDark ? '#ccc' : '#333'} />
-              </TouchableOpacity>
+      {/* ── Modal: responder / atualizar status ── */}
+      <Folha visivel={modalAberto} titulo="Responder solicitação" onFechar={() => setModalAberto(false)}>
+        {ativa && (
+          <>
+            <View>
+              <Text style={s.modalAluno}>{ativa.usuarioNome}</Text>
+              <Text style={ui.subtexto}>
+                ID {ativa.usuarioId}  ·  {ROTULO_TIPO[ativa.tipo] ?? ativa.tipo}  ·  {formatarData(ativa.criadoEm)}
+              </Text>
             </View>
 
-            {solicitacaoAtiva && (
-              <>
-                <Text style={s.modalAluno}>{solicitacaoAtiva.usuarioNome}</Text>
-                <View style={s.modalMensagemBox}>
-                  <Text style={s.modalMensagemLabel}>Mensagem do aluno:</Text>
-                  <Text style={s.modalMensagem}>{solicitacaoAtiva.mensagem}</Text>
-                  {solicitacaoAtiva.grupoMuscular && (
-                    <Text style={s.modalGrupo}>Grupo: {solicitacaoAtiva.grupoMuscular}</Text>
-                  )}
-                </View>
-
-                <Text style={s.modalLabel}>Sua Resposta:</Text>
-                <TextInput
-                  style={s.modalInput}
-                  multiline
-                  numberOfLines={4}
-                  placeholder="Digite sua resposta ao aluno..."
-                  placeholderTextColor="#aaa"
-                  value={resposta}
-                  onChangeText={setResposta}
-                />
-
-                <TouchableOpacity style={s.modalBtn} onPress={responderSolicitacao}>
-                  <Text style={s.modalBtnTxt}>Confirmar Resposta</Text>
-                  <View style={s.checkCircle}>
-                    <MaterialIcons name="check" size={20} color="#fff" />
-                  </View>
-                </TouchableOpacity>
-              </>
+            {!!ativa.mensagem && (
+              <View style={s.mensagemBox}>
+                <Text style={ui.campoLabel}>Mensagem do aluno</Text>
+                <Text style={ui.texto}>{ativa.mensagem}</Text>
+              </View>
             )}
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+
+            <View>
+              <Text style={ui.campoLabel}>Status</Text>
+              <Chips
+                opcoes={STATUS}
+                valor={statusEdit}
+                onChange={v => setStatusEdit(v as StatusSolicitacao)}
+                rotulo={v => ROTULO_STATUS[v as StatusSolicitacao]}
+              />
+              <Text style={[ui.subtexto, { marginTop: 8 }]}>
+                Enquanto não estiver concluída, o aluno não consegue enviar outra solicitação do mesmo tipo.
+              </Text>
+            </View>
+
+            <Campo
+              label="Sua resposta (opcional)"
+              placeholder="Escreva uma resposta ou anotação sobre este pedido..."
+              value={respostaEdit}
+              onChangeText={setRespostaEdit}
+              multiline
+              maxLength={400}
+            />
+
+            <Botao texto="Salvar" onPress={salvar} />
+          </>
+        )}
+      </Folha>
+    </View>
   );
 }
 
-const styles = (temaDark: boolean) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: temaDark ? '#1a1a1a' : HD.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  headerCenter: { alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: HD.primary },
-  notifBadge: { position: 'relative' },
-  badge: { position: 'absolute', top: -4, right: -4, backgroundColor: HD.accent, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  badgeTxt: { color: '#fff', fontSize: 9, fontWeight: '700' },
-  filtrosRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
-  filtroBtn: { flex: 1, paddingVertical: 8, borderRadius: 20, backgroundColor: temaDark ? '#2a2a2a' : '#ddd', alignItems: 'center' },
-  filtroBtnAtivo: { backgroundColor: HD.primary },
-  filtroTxt: { fontSize: 12, color: temaDark ? '#aaa' : '#555', fontWeight: '600' },
-  filtroTxtAtivo: { color: '#fff' },
-  contador: { paddingHorizontal: 20, fontSize: 12, color: '#999', marginBottom: 8 },
-  scroll: { flex: 1, paddingHorizontal: 16 },
-  vazio: { alignItems: 'center', marginTop: 80, gap: 12 },
-  vazioTxt: { color: HD.primary, fontSize: 16, fontWeight: '600' },
-  card: { backgroundColor: temaDark ? '#2a2a2a' : '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  cardLeft: { flex: 1 },
-  tipoBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginBottom: 4 },
-  tipoBadgeTreino: { backgroundColor: temaDark ? '#1a3a35' : '#e0faf5' },
-  tipoBadgeDieta: { backgroundColor: temaDark ? '#3a2a1a' : '#fff3e0' },
-  tipoBadgeTxt: { fontSize: 12, fontWeight: '600', color: HD.primary },
-  cardNome: { fontSize: 15, fontWeight: '700', color: temaDark ? '#eee' : '#222' },
-  cardId: { fontSize: 11, color: '#999' },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  statusPendente: { backgroundColor: temaDark ? '#3a2a1a' : '#fff3e0' },
-  statusRespondido: { backgroundColor: temaDark ? '#1a3a35' : '#e0faf5' },
-  statusTxt: { fontSize: 11, fontWeight: '600', color: temaDark ? '#ddd' : '#555' },
-  grupoMuscular: { fontSize: 12, color: HD.secondary, fontWeight: '600', marginBottom: 6 },
-  cardMensagem: { fontSize: 13, color: temaDark ? '#ccc' : '#555', lineHeight: 18, marginBottom: 8 },
-  respostaBox: { backgroundColor: temaDark ? '#1a3a35' : '#e8faf5', borderRadius: 8, padding: 10, marginBottom: 8 },
-  respostaTitulo: { fontSize: 11, color: HD.primary, fontWeight: '700', marginBottom: 4 },
-  respostaTxt: { fontSize: 12, color: temaDark ? '#bbb' : '#444', lineHeight: 16 },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardData: { fontSize: 11, color: '#999' },
-  cardAcao: { fontSize: 11, color: HD.primary, fontWeight: '600' },
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: temaDark ? '#222' : '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitulo: { fontSize: 18, fontWeight: '700', color: temaDark ? '#eee' : '#222' },
-  modalAluno: { fontSize: 15, fontWeight: '600', color: HD.primary, marginBottom: 12 },
-  modalMensagemBox: { backgroundColor: temaDark ? '#2a2a2a' : '#f5f5f5', borderRadius: 12, padding: 12, marginBottom: 16 },
-  modalMensagemLabel: { fontSize: 11, color: '#999', marginBottom: 4 },
-  modalMensagem: { fontSize: 14, color: temaDark ? '#ccc' : '#444', lineHeight: 20 },
-  modalGrupo: { marginTop: 6, fontSize: 12, color: HD.secondary, fontWeight: '600' },
-  modalLabel: { fontSize: 13, fontWeight: '600', color: temaDark ? '#ccc' : '#333', marginBottom: 8 },
-  modalInput: { backgroundColor: temaDark ? '#2a2a2a' : '#f5f5f5', borderRadius: 12, padding: 14, fontSize: 14, color: temaDark ? '#eee' : '#222', minHeight: 100, textAlignVertical: 'top', marginBottom: 16 },
-  modalBtn: { backgroundColor: HD.primary, borderRadius: 30, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
-  modalBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  checkCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+const estilos = (temaDark: boolean) => StyleSheet.create({
+  filtros: { marginBottom: 12, width: '100%', maxWidth: LARGURA_MAXIMA + 32, alignSelf: 'center' },
+  filtrosConteudo: { paddingHorizontal: 16 },
+
+  cardNome: { fontSize: 15, fontWeight: '700', color: temaDark ? HD.white : HD.textDark, marginBottom: 2 },
+  cardTopo: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  status: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  statusPendente: { backgroundColor: HD.secondaryLight },
+  statusAndamento: { backgroundColor: '#DBEAFE' },
+  statusConcluida: { backgroundColor: HD.primaryLight },
+  statusTxt: { fontSize: 11, fontWeight: '700', color: HD.textDark },
+  mensagem: { marginTop: 10, lineHeight: 20 },
+  respostaBox: {
+    backgroundColor: temaDark ? '#1F2937' : HD.white, borderRadius: 12, padding: 10, marginTop: 10,
+  },
+  respostaTitulo: { fontSize: 11, fontWeight: '700', color: temaDark ? HD.primary : HD.primaryDark, marginBottom: 2 },
+  cardRodape: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  cardAcao: { fontSize: 12, fontWeight: '700', color: temaDark ? HD.primary : HD.primaryDark },
+
+  modalAluno: { fontSize: 16, fontWeight: '700', color: temaDark ? HD.primary : HD.primaryDark },
+  mensagemBox: { backgroundColor: temaDark ? '#111827' : '#F3F4F6', borderRadius: 12, padding: 12 },
 });

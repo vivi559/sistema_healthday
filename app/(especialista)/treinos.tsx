@@ -1,399 +1,561 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * app/(especialista)/treinos.tsx
+ * Montagem dos treinos dos alunos e catálogo de exercícios do especialista.
+ */
+
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  SafeAreaView, Alert, StatusBar,
-} from 'react-native';
+  Abas, Botao, BotaoSecundario, Cabecalho, Campo, Chips, Folha, SeletorAluno, SeletorDias, Vazio,
+  avisar, confirmar, useCores, useEstilos,
+} from '@/components/EspecialistaUI';
+import {
+  DIAS, EQUIPAMENTOS, GRUPOS_MUSCULARES, INTERVALO_OPTS, REPS_OPTS, ROTULO_DIA, SERIES_OPTS,
+  getAlunos, getExercicios, getTreinoAluno, removerExercicio, salvarExercicio, salvarTreinoAluno,
+  type Dia, type ExercicioCatalogo, type ItemTreino, type TreinoAluno,
+} from '@/constants/EspecialistaStorage';
+import type { User } from '@/constants/Storage';
 import { HD } from '@/constants/theme';
-import { useTema } from '@/context/TemaContext';
-import LogoHealthDay from '@/components/LogoHealthDay';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+type Aba = 'criar' | 'gerenciar' | 'exercicios';
+type ModoFolha = 'escolher' | 'form' | 'item';
 
-const EXERCICIOS = [
-  { id: 'e1', nome: 'Leg Press', grupo: 'Inferior' },
-  { id: 'e2', nome: 'Agachamento', grupo: 'Inferior' },
-  { id: 'e3', nome: 'Cadeira Extensora', grupo: 'Inferior' },
-  { id: 'e4', nome: 'Stiff', grupo: 'Inferior' },
-  { id: 'e5', nome: 'Supino Reto', grupo: 'Peito' },
-  { id: 'e6', nome: 'Supino Inclinado', grupo: 'Peito' },
-  { id: 'e7', nome: 'Crucifixo', grupo: 'Peito' },
-  { id: 'e8', nome: 'Puxada Frontal', grupo: 'Costas' },
-  { id: 'e9', nome: 'Remada Curvada', grupo: 'Costas' },
-  { id: 'e10', nome: 'Rosca Direta', grupo: 'Bíceps' },
-  { id: 'e11', nome: 'Rosca Martelo', grupo: 'Bíceps' },
-  { id: 'e12', nome: 'Tríceps Corda', grupo: 'Tríceps' },
-  { id: 'e13', nome: 'Desenvolvimento', grupo: 'Ombro' },
-  { id: 'e14', nome: 'Elevação Lateral', grupo: 'Ombro' },
-  { id: 'e15', nome: 'Prancha', grupo: 'Abdômen' },
+/** Item sendo ajustado: da lista ainda não salva ('lista') ou de um dia já salvo. */
+interface ItemEmEdicao { origem: 'lista' | Dia; indice: number; item: ItemTreino }
+
+const ABAS: { id: Aba; label: string }[] = [
+  { id: 'criar', label: 'Criar treino' },
+  { id: 'gerenciar', label: 'Gerenciar' },
+  { id: 'exercicios', label: 'Exercícios' },
 ];
 
-const SERIES_OPTS = ['2', '3', '4', '5', '6'];
-const REPS_OPTS = ['8', '10', '12', '15', '20'];
-const INTERVALO_OPTS = ['30s', '45s', '1 Min', '1.5 Min', '2 Min', '3 Min'];
+const FORM_VAZIO = {
+  nome: '', grupo: '', equipamento: '', series: '3', reps: '12', intervalo: '1 Min', observacoes: '',
+};
+
+/** Garante que o valor salvo apareça entre as opções, mesmo que não seja um dos padrões. */
+function opcoesCom(opcoes: string[], valor: string) {
+  return !valor || opcoes.includes(valor) ? opcoes : [...opcoes, valor];
+}
+
+function descricaoExercicio(e: Pick<ExercicioCatalogo, 'grupo' | 'equipamento'>) {
+  return [e.grupo, e.equipamento].filter(Boolean).join('  ·  ');
+}
 
 export default function EspecialistaTreinos() {
-  const { temaDark } = useTema();
-  const s = styles(temaDark);
+  const c = useCores();
+  const ui = useEstilos();
 
-  const [diaSelecionado, setDiaSelecionado] = useState('Seg');
-  const [alunos, setAlunos] = useState<any[]>([]);
-  const [alunoSelecionado, setAlunoSelecionado] = useState<any>(null);
-  const [showAlunos, setShowAlunos] = useState(false);
+  const [aba, setAba] = useState<Aba>('criar');
+  const [alunos, setAlunos] = useState<User[]>([]);
+  const [aluno, setAluno] = useState<User | null>(null);
+  const [dia, setDia] = useState<Dia>('Seg');
+  const [catalogo, setCatalogo] = useState<ExercicioCatalogo[]>([]);
+  const [plano, setPlano] = useState<TreinoAluno>({});
 
-  const [exercicioSelecionado, setExercicioSelecionado] = useState<any>(null);
-  const [showExercicios, setShowExercicios] = useState(false);
-
+  // Exercício sendo configurado e lista ainda não salva
+  const [exercicio, setExercicio] = useState<ExercicioCatalogo | null>(null);
   const [series, setSeries] = useState('');
-  const [showSeries, setShowSeries] = useState(false);
-
   const [reps, setReps] = useState('');
-  const [showReps, setShowReps] = useState(false);
-
   const [intervalo, setIntervalo] = useState('');
-  const [showIntervalo, setShowIntervalo] = useState(false);
+  const [pendentes, setPendentes] = useState<ItemTreino[]>([]);
 
-  const [exerciciosAdicionados, setExerciciosAdicionados] = useState<any[]>([]);
-  const [aba, setAba] = useState<'criar' | 'gerenciar'>('criar');
-  const [treinosSalvos, setTreinosSalvos] = useState<any>({});
+  // Busca no catálogo (aba Exercícios e escolha do exercício)
+  const [busca, setBusca] = useState('');
+  const [grupoFiltro, setGrupoFiltro] = useState('Todos');
+
+  // Modal: escolher exercício, cadastrar/editar um no catálogo, ou ajustar um item do treino
+  // (o modo fica guardado ao fechar, para o conteúdo não trocar durante a animação)
+  const [folhaAberta, setFolhaAberta] = useState(false);
+  const [modoFolha, setModoFolha] = useState<ModoFolha>('escolher');
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [form, setForm] = useState(FORM_VAZIO);
+  const [voltarParaCriar, setVoltarParaCriar] = useState(false);
+
+  // Ajuste de séries/repetições/intervalo de um exercício já na lista ou já salvo
+  const [itemEditando, setItemEditando] = useState<ItemEmEdicao | null>(null);
+  const [editSeries, setEditSeries] = useState('');
+  const [editReps, setEditReps] = useState('');
+  const [editIntervalo, setEditIntervalo] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+      Promise.all([getAlunos(), getExercicios()]).then(([listaAlunos, listaExercicios]) => {
+        if (!ativo) return;
+        setAlunos(listaAlunos);
+        setCatalogo(listaExercicios);
+      });
+      return () => { ativo = false; };
+    }, []),
+  );
 
   useEffect(() => {
-    carregarAlunos();
-  }, []);
+    if (!aluno) { setPlano({}); return; }
+    let ativo = true;
+    getTreinoAluno(aluno.id).then(p => { if (ativo) setPlano(p); });
+    return () => { ativo = false; };
+  }, [aluno]);
 
-  useEffect(() => {
-    if (alunoSelecionado) carregarTreinosSalvos(alunoSelecionado.id);
-  }, [alunoSelecionado, aba]);
+  const catalogoFiltrado = catalogo.filter(e =>
+    (grupoFiltro === 'Todos' || e.grupo === grupoFiltro) &&
+    e.nome.toLowerCase().includes(busca.trim().toLowerCase()),
+  );
+  const diasComTreino = DIAS.filter(d => (plano[d]?.length ?? 0) > 0);
+  const salvosNoDia = plano[dia]?.length ?? 0;
 
-  const carregarTreinosSalvos = async (alunoId: string) => {
-    try {
-      const chave = `@treino_especialista_${alunoId}`;
-      const existente = await AsyncStorage.getItem(chave);
-      setTreinosSalvos(existente ? JSON.parse(existente) : {});
-    } catch {
-      setTreinosSalvos({});
-    }
-  };
+  function abrirFolha(modo: ModoFolha) {
+    setModoFolha(modo);
+    setFolhaAberta(true);
+  }
 
-  const removerExercicioSalvo = async (dia: string, idx: number) => {
-    if (!alunoSelecionado) return;
-    Alert.alert('Remover', 'Deseja remover este exercício?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover', style: 'destructive',
-        onPress: async () => {
-          const chave = `@treino_especialista_${alunoSelecionado.id}`;
-          const novos = { ...treinosSalvos };
-          novos[dia] = novos[dia].filter((_: any, i: number) => i !== idx);
-          if (novos[dia].length === 0) delete novos[dia];
-          await AsyncStorage.setItem(chave, JSON.stringify(novos));
-          setTreinosSalvos({ ...novos });
-        },
+  // Fechar o cadastro aberto a partir da escolha volta para a escolha
+  function fecharFolha() {
+    if (modoFolha === 'form' && voltarParaCriar) setModoFolha('escolher');
+    else setFolhaAberta(false);
+  }
+
+  // ── Montagem do treino ──
+
+  function escolherExercicio(e: ExercicioCatalogo) {
+    setExercicio(e);
+    setSeries(e.seriesPadrao ?? '');
+    setReps(e.repsPadrao ?? '');
+    setIntervalo(e.intervaloPadrao ?? '');
+    setFolhaAberta(false);
+  }
+
+  function adicionarALista() {
+    if (!exercicio) return avisar('Atenção', 'Selecione um exercício.');
+    if (!series) return avisar('Atenção', 'Selecione as séries.');
+    if (!reps) return avisar('Atenção', 'Selecione as repetições.');
+    if (!intervalo) return avisar('Atenção', 'Selecione o intervalo.');
+
+    setPendentes(prev => [...prev, {
+      id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      exercicio: {
+        id: exercicio.id, nome: exercicio.nome, grupo: exercicio.grupo,
+        equipamento: exercicio.equipamento, observacoes: exercicio.observacoes,
       },
-    ]);
-  };
-
-  const carregarAlunos = async () => {
-    try {
-      const dados = await AsyncStorage.getItem('@usuarios');
-      if (dados) {
-        const todos = JSON.parse(dados);
-        setAlunos(todos.filter((u: any) => u.tipo === 'usuario'));
-      } else {
-        setAlunos([
-          { id: '003', nome: 'Jonas Duzzo' },
-          { id: '004', nome: 'Maria Silva' },
-          { id: '005', nome: 'Pedro Santos' },
-        ]);
-      }
-    } catch {
-      setAlunos([
-        { id: '003', nome: 'Jonas Duzzo' },
-        { id: '004', nome: 'Maria Silva' },
-        { id: '005', nome: 'Pedro Santos' },
-      ]);
-    }
-  };
-
-  const fecharTodos = () => {
-    setShowAlunos(false);
-    setShowExercicios(false);
-    setShowSeries(false);
-    setShowReps(false);
-    setShowIntervalo(false);
-  };
-
-  const adicionarExercicio = () => {
-    if (!exercicioSelecionado) return Alert.alert('Atenção', 'Selecione um exercício!');
-    if (!series) return Alert.alert('Atenção', 'Selecione as séries!');
-    if (!reps) return Alert.alert('Atenção', 'Selecione as repetições!');
-    if (!intervalo) return Alert.alert('Atenção', 'Selecione o intervalo!');
-
-    setExerciciosAdicionados(prev => [...prev, {
-      id: Date.now().toString(),
-      exercicio: exercicioSelecionado,
       series, reps, intervalo,
     }]);
-    setExercicioSelecionado(null);
+    setExercicio(null);
     setSeries('');
     setReps('');
     setIntervalo('');
-  };
+  }
 
-  const removerExercicio = (id: string) => {
-    setExerciciosAdicionados(prev => prev.filter(e => e.id !== id));
-  };
+  async function salvarTreino() {
+    if (!aluno) return avisar('Atenção', 'Selecione um aluno.');
+    if (pendentes.length === 0) return avisar('Atenção', 'Adicione pelo menos um exercício à lista.');
+    try {
+      const atual = await getTreinoAluno(aluno.id);
+      const novo: TreinoAluno = { ...atual, [dia]: [...(atual[dia] ?? []), ...pendentes] };
+      await salvarTreinoAluno(aluno.id, novo);
+      setPlano(novo);
+      setPendentes([]);
+      avisar('Treino salvo!', `Treino de ${ROTULO_DIA[dia]} salvo para ${aluno.nome}.`);
+    } catch {
+      avisar('Erro', 'Não foi possível salvar o treino.');
+    }
+  }
 
-  const concluirTreino = async () => {
-    if (!alunoSelecionado) return Alert.alert('Atenção', 'Selecione um aluno!');
-    if (exerciciosAdicionados.length === 0) return Alert.alert('Atenção', 'Adicione pelo menos um exercício!');
+  function removerDoPlano(d: Dia, itemId: string, nome: string) {
+    if (!aluno) return;
+    confirmar('Remover exercício', `Remover "${nome}" do treino de ${ROTULO_DIA[d]}?`, async () => {
+      const novo: TreinoAluno = { ...plano };
+      const restantes = (novo[d] ?? []).filter(i => i.id !== itemId);
+      if (restantes.length > 0) novo[d] = restantes;
+      else delete novo[d];
+      await salvarTreinoAluno(aluno.id, novo);
+      setPlano(novo);
+    }, 'Remover');
+  }
+
+  // ── Ajustar séries / repetições / intervalo ──
+
+  function abrirAjuste(origem: 'lista' | Dia, indice: number, item: ItemTreino) {
+    setItemEditando({ origem, indice, item });
+    setEditSeries(item.series);
+    setEditReps(item.reps);
+    setEditIntervalo(item.intervalo);
+    abrirFolha('item');
+  }
+
+  async function salvarAjuste() {
+    if (!itemEditando) return;
+    const { origem, indice, item } = itemEditando;
+    const ajustado: ItemTreino = { ...item, series: editSeries, reps: editReps, intervalo: editIntervalo };
+
+    if (origem === 'lista') {
+      setPendentes(prev => prev.map((p, i) => (i === indice ? ajustado : p)));
+      setFolhaAberta(false);
+      return;
+    }
+    if (!aluno) return;
+    try {
+      const atual = await getTreinoAluno(aluno.id);
+      const lista = atual[origem] ?? [];
+      if (!lista[indice]) return avisar('Erro', 'Este exercício não está mais no treino.');
+      const novo: TreinoAluno = { ...atual, [origem]: lista.map((p, i) => (i === indice ? ajustado : p)) };
+      await salvarTreinoAluno(aluno.id, novo);
+      setPlano(novo);
+      setFolhaAberta(false);
+      avisar(
+        'Exercício atualizado!',
+        `${item.exercicio?.nome} em ${ROTULO_DIA[origem]}: ${editSeries} séries de ${editReps}, intervalo ${editIntervalo}.`,
+      );
+    } catch {
+      avisar('Erro', 'Não foi possível salvar a alteração.');
+    }
+  }
+
+  // ── Catálogo de exercícios ──
+
+  function abrirForm(e?: ExercicioCatalogo, aPartirDaEscolha = false) {
+    setEditandoId(e?.id ?? null);
+    setForm(e ? {
+      nome: e.nome,
+      grupo: e.grupo,
+      equipamento: e.equipamento ?? '',
+      series: e.seriesPadrao ?? '3',
+      reps: e.repsPadrao ?? '12',
+      intervalo: e.intervaloPadrao ?? '1 Min',
+      observacoes: e.observacoes ?? '',
+    } : { ...FORM_VAZIO, nome: aPartirDaEscolha ? busca.trim() : '' });
+    setVoltarParaCriar(aPartirDaEscolha);
+    abrirFolha('form');
+  }
+
+  async function salvarForm() {
+    const nome = form.nome.trim();
+    if (nome.length < 2) return avisar('Atenção', 'Informe o nome do exercício.');
+    if (!form.grupo) return avisar('Atenção', 'Selecione o grupo muscular.');
+    const repetido = catalogo.some(e => e.id !== editandoId && e.nome.toLowerCase() === nome.toLowerCase());
+    if (repetido) return avisar('Atenção', `Já existe um exercício chamado "${nome}".`);
 
     try {
-      const chave = `@treino_especialista_${alunoSelecionado.id}`;
-      const existente = await AsyncStorage.getItem(chave);
-      const treinos = existente ? JSON.parse(existente) : {};
-
-      if (!treinos[diaSelecionado]) treinos[diaSelecionado] = [];
-      treinos[diaSelecionado] = [...treinos[diaSelecionado], ...exerciciosAdicionados];
-
-      await AsyncStorage.setItem(chave, JSON.stringify(treinos));
-      Alert.alert('Treino salvo!', `Treino de ${diaSelecionado} salvo para ${alunoSelecionado.nome}!`);
-      setExerciciosAdicionados([]);
+      const salvo = await salvarExercicio({
+        nome,
+        grupo: form.grupo,
+        equipamento: form.equipamento || undefined,
+        seriesPadrao: form.series,
+        repsPadrao: form.reps,
+        intervaloPadrao: form.intervalo,
+        observacoes: form.observacoes.trim() || undefined,
+      }, editandoId ?? undefined);
+      setCatalogo(await getExercicios());
+      setBusca('');
+      if (voltarParaCriar) escolherExercicio(salvo);
+      else setFolhaAberta(false);
     } catch {
-      Alert.alert('Erro', 'Não foi possível salvar o treino.');
+      avisar('Erro', 'Não foi possível salvar o exercício.');
     }
-  };
+  }
 
-  const DropdownSimples = ({
-    label, valor, show, onToggle, opcoes, onSelect,
-  }: { label: string; valor: string; show: boolean; onToggle: () => void; opcoes: string[]; onSelect: (v: string) => void }) => (
-    <>
-      <TouchableOpacity style={s.dropdown} onPress={onToggle}>
-        <Text style={s.dropdownTxt}>{valor || label}</Text>
-        <MaterialIcons name={show ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
-      </TouchableOpacity>
-      {show && (
-        <View style={s.dropdownList}>
-          {opcoes.map(o => (
-            <TouchableOpacity key={o} style={s.dropdownItem} onPress={() => onSelect(o)}>
-              <Text style={s.dropdownItemTxt}>{o}</Text>
-            </TouchableOpacity>
-          ))}
+  function excluirExercicio(e: ExercicioCatalogo) {
+    confirmar(
+      'Excluir exercício',
+      `Excluir "${e.nome}" do catálogo? Treinos já salvos com ele não são alterados.`,
+      async () => {
+        await removerExercicio(e.id);
+        setCatalogo(await getExercicios());
+        if (exercicio?.id === e.id) setExercicio(null);
+      },
+      'Excluir',
+    );
+  }
+
+  // ── Pedaços de tela ──
+
+  const linhaItem = (item: ItemTreino, indice: number, onEditar: () => void, onRemover: () => void) => (
+    <View key={item.id ?? indice} style={[ui.linha, indice === 0 && ui.linhaPrimeira]}>
+      <TouchableOpacity style={{ flex: 1 }} onPress={onEditar} activeOpacity={0.7}>
+        <Text style={ui.linhaTitulo}>{indice + 1}. {item.exercicio?.nome}</Text>
+        <View style={s.badges}>
+          <View style={s.badge}><Text style={s.badgeTxt}>{item.series} séries</Text></View>
+          <View style={s.badge}><Text style={s.badgeTxt}>{item.reps} reps</Text></View>
+          <View style={s.badge}><Text style={s.badgeTxt}>{item.intervalo}</Text></View>
         </View>
-      )}
+      </TouchableOpacity>
+      <TouchableOpacity style={ui.acao} onPress={onEditar} accessibilityLabel="Ajustar exercício">
+        <MaterialIcons name="edit" size={20} color={HD.primary} />
+      </TouchableOpacity>
+      <TouchableOpacity style={ui.acao} onPress={onRemover} accessibilityLabel="Remover exercício">
+        <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const filtrosCatalogo = (
+    <>
+      <Campo
+        icone="search"
+        placeholder="Pesquise o exercício"
+        value={busca}
+        onChangeText={setBusca}
+      />
+      <Chips opcoes={['Todos', ...GRUPOS_MUSCULARES]} valor={grupoFiltro} onChange={setGrupoFiltro} />
     </>
   );
 
   return (
-    <SafeAreaView style={s.safe}>
-      <StatusBar barStyle={temaDark ? 'light-content' : 'dark-content'} />
+    <View style={ui.container}>
+      <Cabecalho titulo="Treinos" />
+      <Abas opcoes={ABAS} valor={aba} onChange={setAba} />
 
-      <View style={s.header}>
-        <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-        <View style={s.headerCenter}>
-          <Text style={s.headerTitle}>Especialista</Text>
-          <LogoHealthDay size={28} />
-        </View>
-        <MaterialIcons name="menu" size={26} color={HD.primary} />
-      </View>
-
-      {/* Abas */}
-      <View style={s.abasRow}>
-        <TouchableOpacity style={[s.abaBtn, aba === 'criar' && s.abaBtnAtivo]} onPress={() => setAba('criar')}>
-          <Text style={[s.abaTxt, aba === 'criar' && s.abaTxtAtivo]}>Criar Treino</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.abaBtn, aba === 'gerenciar' && s.abaBtnAtivo]} onPress={() => setAba('gerenciar')}>
-          <Text style={[s.abaTxt, aba === 'gerenciar' && s.abaTxtAtivo]}>Gerenciar</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Formulário de criação */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={ui.scroll}
+      >
+        {/* ── Criar treino ── */}
         {aba === 'criar' && (
-        <View>
-        <View style={s.diasRow}>
-          {DIAS.map(dia => (
-            <TouchableOpacity
-              key={dia}
-              style={[s.diaBtn, diaSelecionado === dia && s.diaBtnAtivo]}
-              onPress={() => setDiaSelecionado(dia)}
-            >
-              <Text style={[s.diaTxt, diaSelecionado === dia && s.diaTxtAtivo]}>{dia}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <>
+            <SeletorAluno alunos={alunos} valor={aluno} onChange={setAluno} />
+            <SeletorDias valor={dia} onChange={setDia} marcados={diasComTreino} />
+            {aluno && salvosNoDia > 0 && (
+              <Text style={[ui.subtexto, { textAlign: 'center' }]}>
+                {ROTULO_DIA[dia]} já tem {salvosNoDia} exercício(s) salvo(s). Os novos serão somados.
+              </Text>
+            )}
 
-        {/* Aluno */}
-        <TouchableOpacity style={s.dropdown} onPress={() => { fecharTodos(); setShowAlunos(!showAlunos); }}>
-          <Text style={s.dropdownTxt}>{alunoSelecionado ? `ID:${alunoSelecionado.id}_${alunoSelecionado.nome}` : 'Selecione o aluno'}</Text>
-          <MaterialIcons name={showAlunos ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
-        </TouchableOpacity>
-        {showAlunos && (
-          <View style={s.dropdownList}>
-            {alunos.map(a => (
-              <TouchableOpacity key={a.id} style={s.dropdownItem} onPress={() => { setAlunoSelecionado(a); setShowAlunos(false); }}>
-                <Text style={s.dropdownItemTxt}>ID:{a.id}_{a.nome}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Exercício */}
-        <TouchableOpacity style={s.dropdown} onPress={() => { fecharTodos(); setShowExercicios(!showExercicios); }}>
-          <Text style={s.dropdownTxt}>{exercicioSelecionado ? exercicioSelecionado.nome : 'Selecione o exercicio'}</Text>
-          <MaterialIcons name={showExercicios ? 'expand-less' : 'expand-more'} size={22} color={temaDark ? '#ccc' : '#555'} />
-        </TouchableOpacity>
-        {showExercicios && (
-          <View style={s.dropdownList}>
-            {EXERCICIOS.map(e => (
-              <TouchableOpacity key={e.id} style={s.dropdownItem} onPress={() => { setExercicioSelecionado(e); setShowExercicios(false); }}>
-                <Text style={s.dropdownItemTxt}>{e.nome}</Text>
-                <Text style={s.dropdownItemSub}>{e.grupo}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Intervalo */}
-        <DropdownSimples
-          label="Intervalo" valor={intervalo} show={showIntervalo}
-          onToggle={() => { fecharTodos(); setShowIntervalo(!showIntervalo); }}
-          opcoes={INTERVALO_OPTS} onSelect={v => { setIntervalo(v); setShowIntervalo(false); }}
-        />
-
-        {/* Séries */}
-        <DropdownSimples
-          label="Series" valor={series ? `${series} Séries` : ''} show={showSeries}
-          onToggle={() => { fecharTodos(); setShowSeries(!showSeries); }}
-          opcoes={SERIES_OPTS} onSelect={v => { setSeries(v); setShowSeries(false); }}
-        />
-
-        {/* Repetições */}
-        <DropdownSimples
-          label="Repetições" valor={reps ? `${reps} Reps` : ''} show={showReps}
-          onToggle={() => { fecharTodos(); setShowReps(!showReps); }}
-          opcoes={REPS_OPTS} onSelect={v => { setReps(v); setShowReps(false); }}
-        />
-
-        {/* Botão adicionar exercício */}
-        <TouchableOpacity style={s.adicionarBtn} onPress={adicionarExercicio}>
-          <MaterialIcons name="add-circle-outline" size={20} color={HD.primary} />
-          <Text style={s.adicionarTxt}>Adicionar Exercício à Lista</Text>
-        </TouchableOpacity>
-
-        {/* Lista de exercícios adicionados */}
-        {exerciciosAdicionados.length > 0 && (
-          <View style={s.listaBox}>
-            <Text style={s.listaTitulo}>Exercícios para {diaSelecionado}:</Text>
-            {exerciciosAdicionados.map((item, idx) => (
-              <View key={item.id} style={s.exercicioCard}>
-                <View style={s.exercicioInfo}>
-                  <Text style={s.exercicioNome}>{idx + 1}. {item.exercicio.nome}</Text>
-                  <View style={s.badgesRow}>
-                    <View style={s.badge}><Text style={s.badgeTxt}>Séries {item.series}</Text></View>
-                    <View style={s.badge}><Text style={s.badgeTxt}>Reps {item.reps}</Text></View>
-                    <View style={s.badge}><Text style={s.badgeTxt}>{item.intervalo}</Text></View>
-                  </View>
+            <View style={ui.card}>
+              <Text style={ui.cardTitulo}>Exercício</Text>
+              <TouchableOpacity style={ui.seletor} onPress={() => abrirFolha('escolher')} activeOpacity={0.8}>
+                <MaterialIcons name="fitness-center" size={20} color={HD.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[ui.seletorTxt, !exercicio && ui.seletorVazio]} numberOfLines={1}>
+                    {exercicio ? exercicio.nome : 'Selecione o exercício'}
+                  </Text>
+                  {exercicio && <Text style={ui.subtexto}>{descricaoExercicio(exercicio)}</Text>}
                 </View>
-                <TouchableOpacity onPress={() => removerExercicio(item.id)}>
-                  <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
-                </TouchableOpacity>
+                <MaterialIcons name="chevron-right" size={22} color={c.subtexto} />
+              </TouchableOpacity>
+              {!!exercicio?.observacoes && (
+                <Text style={[ui.subtexto, { marginTop: 8 }]}>{exercicio.observacoes}</Text>
+              )}
+
+              <Text style={[ui.secao, s.espaco]}>Séries</Text>
+              <Chips opcoes={SERIES_OPTS} valor={series} onChange={setSeries} />
+              <Text style={[ui.secao, s.espaco]}>Repetições</Text>
+              <Chips opcoes={REPS_OPTS} valor={reps} onChange={setReps} />
+              <Text style={[ui.secao, s.espaco]}>Intervalo</Text>
+              <Chips opcoes={INTERVALO_OPTS} valor={intervalo} onChange={setIntervalo} />
+
+              <View style={s.espaco}>
+                <BotaoSecundario texto="Adicionar à lista" onPress={adicionarALista} />
               </View>
-            ))}
-          </View>
+            </View>
+
+            {pendentes.length > 0 && (
+              <View style={ui.card}>
+                <Text style={ui.cardTitulo}>Lista para {ROTULO_DIA[dia]}</Text>
+                {pendentes.map((item, i) =>
+                  linhaItem(
+                    item, i,
+                    () => abrirAjuste('lista', i, item),
+                    () => setPendentes(prev => prev.filter((_, j) => j !== i)),
+                  ),
+                )}
+              </View>
+            )}
+
+            <Botao
+              texto={`Salvar treino de ${ROTULO_DIA[dia]}`}
+              onPress={salvarTreino}
+              desabilitado={pendentes.length === 0}
+            />
+          </>
         )}
 
-        </View>)}
-
-        {/* ── Seção Gerenciar ── */}
+        {/* ── Gerenciar treinos salvos ── */}
         {aba === 'gerenciar' && (
-          <View>
-            {!alunoSelecionado ? (
-              <View style={s.emptyBox}>
-                <Text style={s.emptyTxt}>Selecione um aluno acima para ver os treinos.</Text>
-              </View>
-            ) : Object.keys(treinosSalvos).length === 0 ? (
-              <View style={s.emptyBox}>
-                <Text style={s.emptyTxt}>Nenhum treino cadastrado para {alunoSelecionado.nome}.</Text>
-              </View>
+          <>
+            <SeletorAluno alunos={alunos} valor={aluno} onChange={setAluno} />
+            {!aluno ? (
+              <Vazio icone="person-search" texto="Selecione um aluno para ver os treinos salvos." />
+            ) : diasComTreino.length === 0 ? (
+              <Vazio icone="fitness-center" texto={`Nenhum treino cadastrado para ${aluno.nome}.`} />
             ) : (
-              DIAS.filter(d => treinosSalvos[d] && treinosSalvos[d].length > 0).map(dia => (
-                <View key={dia} style={s.listaBox}>
-                  <Text style={s.listaTitulo}>{dia}</Text>
-                  {treinosSalvos[dia].map((item: any, idx: number) => (
-                    <View key={idx} style={s.exercicioCard}>
-                      <View style={s.exercicioInfo}>
-                        <Text style={s.exercicioNome}>{idx + 1}. {item.exercicio?.nome ?? item.nome}</Text>
-                        <View style={s.badgesRow}>
-                          <View style={s.badge}><Text style={s.badgeTxt}>Séries {item.series}</Text></View>
-                          <View style={s.badge}><Text style={s.badgeTxt}>Reps {item.reps}</Text></View>
-                          <View style={s.badge}><Text style={s.badgeTxt}>{item.intervalo}</Text></View>
-                        </View>
-                      </View>
-                      <TouchableOpacity onPress={() => removerExercicioSalvo(dia, idx)}>
-                        <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+              diasComTreino.map(d => (
+                <View key={d} style={ui.card}>
+                  <Text style={[ui.cardTitulo, { color: HD.primary }]}>{ROTULO_DIA[d]}</Text>
+                  {(plano[d] ?? []).map((item, i) =>
+                    linhaItem(
+                      item, i,
+                      () => abrirAjuste(d, i, item),
+                      () => removerDoPlano(d, item.id, item.exercicio?.nome ?? 'exercício'),
+                    ),
+                  )}
                 </View>
               ))
             )}
-          </View>
+          </>
         )}
 
-        <View style={{ height: 100 }} />
+        {/* ── Catálogo de exercícios ── */}
+        {aba === 'exercicios' && (
+          <>
+            <BotaoSecundario texto="Novo exercício" onPress={() => abrirForm()} />
+            {filtrosCatalogo}
+            <View style={ui.card}>
+              {catalogoFiltrado.length === 0 ? (
+                <Vazio icone="search-off" texto="Nenhum exercício encontrado." />
+              ) : (
+                catalogoFiltrado.map((e, i) => (
+                  <View key={e.id} style={[ui.linha, i === 0 && ui.linhaPrimeira]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={ui.linhaTitulo}>{e.nome}</Text>
+                      <Text style={ui.subtexto}>{descricaoExercicio(e)}</Text>
+                      {!!e.seriesPadrao && (
+                        <Text style={ui.subtexto}>
+                          Padrão: {e.seriesPadrao}x{e.repsPadrao}  ·  {e.intervaloPadrao}
+                        </Text>
+                      )}
+                      {e.personalizado && (
+                        <View style={ui.tag}><Text style={ui.tagTxt}>Cadastrado por você</Text></View>
+                      )}
+                    </View>
+                    {e.personalizado && (
+                      <>
+                        <TouchableOpacity style={ui.acao} onPress={() => abrirForm(e)} accessibilityLabel="Editar exercício">
+                          <MaterialIcons name="edit" size={20} color={HD.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={ui.acao} onPress={() => excluirExercicio(e)} accessibilityLabel="Excluir exercício">
+                          <MaterialIcons name="delete-outline" size={22} color={HD.accent} />
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
 
-      {/* Botão Concluir */}
-      <View style={s.footer}>
-        <TouchableOpacity style={s.concluirBtn} onPress={concluirTreino}>
-          <Text style={s.concluirTxt}>Concluir Treino</Text>
-          <View style={s.checkCircle}>
-            <MaterialIcons name="check" size={22} color="#fff" />
-          </View>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      {/* ── Modal único: escolher exercício, cadastrar/editar um, ou ajustar item do treino ── */}
+      <Folha
+        visivel={folhaAberta}
+        titulo={
+          modoFolha === 'escolher' ? 'Selecione o exercício'
+            : modoFolha === 'item' ? 'Ajustar exercício'
+              : editandoId ? 'Editar exercício' : 'Novo exercício'
+        }
+        onFechar={fecharFolha}
+      >
+        {modoFolha === 'item' && itemEditando ? (
+          <>
+            <View>
+              <Text style={s.ajusteNome}>{itemEditando.item.exercicio?.nome}</Text>
+              <Text style={ui.subtexto}>
+                {[
+                  descricaoExercicio(itemEditando.item.exercicio ?? { grupo: '' }),
+                  itemEditando.origem === 'lista' ? 'Lista ainda não salva' : `Treino de ${ROTULO_DIA[itemEditando.origem]}`,
+                ].filter(Boolean).join('  ·  ')}
+              </Text>
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Séries</Text>
+              <Chips opcoes={opcoesCom(SERIES_OPTS, itemEditando.item.series)} valor={editSeries} onChange={setEditSeries} />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Repetições</Text>
+              <Chips opcoes={opcoesCom(REPS_OPTS, itemEditando.item.reps)} valor={editReps} onChange={setEditReps} />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Intervalo</Text>
+              <Chips opcoes={opcoesCom(INTERVALO_OPTS, itemEditando.item.intervalo)} valor={editIntervalo} onChange={setEditIntervalo} />
+            </View>
+            <Botao texto="Salvar alterações" onPress={salvarAjuste} />
+          </>
+        ) : modoFolha === 'escolher' ? (
+          <>
+            {filtrosCatalogo}
+            <BotaoSecundario
+              texto={busca.trim() ? `Cadastrar "${busca.trim()}"` : 'Novo exercício'}
+              onPress={() => abrirForm(undefined, true)}
+            />
+            <View>
+              {catalogoFiltrado.length === 0 ? (
+                <Vazio icone="search-off" texto="Nenhum exercício encontrado. Cadastre um novo acima." />
+              ) : (
+                catalogoFiltrado.map((e, i) => (
+                  <TouchableOpacity
+                    key={e.id}
+                    style={[ui.linha, i === 0 && ui.linhaPrimeira]}
+                    onPress={() => escolherExercicio(e)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={ui.linhaTitulo}>{e.nome}</Text>
+                      <Text style={ui.subtexto}>{descricaoExercicio(e)}</Text>
+                    </View>
+                    <MaterialIcons
+                      name={exercicio?.id === e.id ? 'check-circle' : 'add-circle-outline'}
+                      size={22}
+                      color={exercicio?.id === e.id ? HD.primary : c.subtexto}
+                    />
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </>
+        ) : (
+          <>
+            <Campo
+              label="Nome do exercício *"
+              placeholder="Ex: Agachamento Búlgaro"
+              value={form.nome}
+              onChangeText={nome => setForm(f => ({ ...f, nome }))}
+              maxLength={40}
+            />
+            <View>
+              <Text style={ui.campoLabel}>Grupo muscular *</Text>
+              <Chips opcoes={GRUPOS_MUSCULARES} valor={form.grupo} onChange={grupo => setForm(f => ({ ...f, grupo }))} />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Equipamento</Text>
+              <Chips
+                opcoes={EQUIPAMENTOS}
+                valor={form.equipamento}
+                onChange={eq => setForm(f => ({ ...f, equipamento: f.equipamento === eq ? '' : eq }))}
+              />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Séries sugeridas</Text>
+              <Chips opcoes={SERIES_OPTS} valor={form.series} onChange={v => setForm(f => ({ ...f, series: v }))} />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Repetições sugeridas</Text>
+              <Chips opcoes={REPS_OPTS} valor={form.reps} onChange={v => setForm(f => ({ ...f, reps: v }))} />
+            </View>
+            <View>
+              <Text style={ui.campoLabel}>Intervalo sugerido</Text>
+              <Chips opcoes={INTERVALO_OPTS} valor={form.intervalo} onChange={v => setForm(f => ({ ...f, intervalo: v }))} />
+            </View>
+            <Campo
+              label="Observações (opcional)"
+              placeholder="Dicas de execução, postura, cuidados..."
+              value={form.observacoes}
+              onChangeText={observacoes => setForm(f => ({ ...f, observacoes }))}
+              multiline
+              maxLength={200}
+            />
+            <Botao texto={editandoId ? 'Salvar alterações' : 'Cadastrar exercício'} onPress={salvarForm} />
+          </>
+        )}
+      </Folha>
+    </View>
   );
 }
 
-const styles = (temaDark: boolean) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: temaDark ? '#1a1a1a' : HD.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  headerCenter: { alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: HD.primary },
-  scroll: { flex: 1, paddingHorizontal: 16 },
-  diasRow: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 },
-  diaBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: temaDark ? '#333' : '#555', justifyContent: 'center', alignItems: 'center' },
-  diaBtnAtivo: { backgroundColor: HD.primary },
-  diaTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  diaTxtAtivo: { color: '#fff' },
-  dropdown: { backgroundColor: temaDark ? '#2a2a2a' : '#fff', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, elevation: 2 },
-  dropdownTxt: { fontSize: 15, color: temaDark ? '#ccc' : '#555' },
-  dropdownList: { backgroundColor: temaDark ? '#333' : '#fff', borderRadius: 12, marginBottom: 10, overflow: 'hidden', elevation: 4 },
-  dropdownItem: { paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: temaDark ? '#444' : '#eee' },
-  dropdownItemTxt: { fontSize: 14, color: temaDark ? '#ddd' : '#333' },
-  dropdownItemSub: { fontSize: 11, color: HD.primary, marginTop: 2 },
-  adicionarBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, backgroundColor: temaDark ? '#1a3a35' : '#e0faf5', borderRadius: 12, marginBottom: 16 },
-  adicionarTxt: { color: HD.primary, fontWeight: '600', fontSize: 14 },
-  listaBox: { backgroundColor: temaDark ? '#2a2a2a' : '#fff', borderRadius: 16, padding: 16, marginBottom: 12 },
-  listaTitulo: { fontSize: 14, fontWeight: '700', color: temaDark ? '#ccc' : '#333', marginBottom: 12 },
-  exercicioCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: temaDark ? '#444' : '#eee' },
-  exercicioInfo: { flex: 1 },
-  exercicioNome: { fontSize: 14, fontWeight: '600', color: temaDark ? '#eee' : '#222', marginBottom: 6 },
-  badgesRow: { flexDirection: 'row', gap: 8 },
-  badge: { backgroundColor: HD.primary, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeTxt: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  footer: { paddingHorizontal: 16, paddingBottom: 90, paddingTop: 8 },
-  concluirBtn: { backgroundColor: HD.primary, borderRadius: 30, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 },
-  concluirTxt: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  checkCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
-  abasRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: temaDark ? '#2a2a2a' : '#eee', borderRadius: 12, padding: 4 },
-  abaBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  abaBtnAtivo: { backgroundColor: HD.primary },
-  abaTxt: { fontSize: 14, fontWeight: '600', color: temaDark ? '#aaa' : '#666' },
-  abaTxtAtivo: { color: '#fff' },
-  emptyBox: { padding: 32, alignItems: 'center' },
-  emptyTxt: { color: temaDark ? '#aaa' : '#888', fontSize: 14, textAlign: 'center' },
+const s = StyleSheet.create({
+  espaco: { marginTop: 14 },
+  ajusteNome: { fontSize: 16, fontWeight: '700', color: HD.primary },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  badge: { backgroundColor: HD.primary, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
+  badgeTxt: { color: HD.white, fontSize: 11, fontWeight: '600' },
 });
