@@ -5,6 +5,7 @@
  */
 
 import LogoHealthDay from "@/components/LogoHealthDay";
+import SinoLembretes from "@/components/SinoLembretes";
 import {
   atualizarUsuario,
   calcularIMC,
@@ -329,11 +330,9 @@ export default function PerfilScreen() {
     });
   }
 
+  // Abre o questionário de pré-seleção para quem quer ser especialista
   function handleSerProfissional() {
-    aviso(
-      "Seja um Profissional",
-      "Para se tornar um especialista no Health Day, entre em contato com o administrador.",
-    );
+    router.push("/seja-profissional");
   }
 
   function handleLogout() {
@@ -373,10 +372,8 @@ export default function PerfilScreen() {
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
+        {/* Sino: próximos lembretes da Agenda */}
+        <SinoLembretes />
 
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Perfil</Text>

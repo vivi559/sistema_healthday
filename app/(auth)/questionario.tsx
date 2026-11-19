@@ -2,11 +2,17 @@
  * app/(auth)/questionario.tsx
  * Questionário de perfil — 4 etapas para gerar dieta e treino automaticamente.
  * Faz parte do fluxo de onboarding: cadastro → imc → questionario → home.
+ *
+ * Altura e peso informados na tela de IMC são reaproveitados aqui: a etapa 1
+ * mostra só um resumo (com opção de alterar) e pergunta idade e sexo.
  */
 
+import { AvisosNaTela, avisar } from "@/components/EspecialistaUI";
 import LogoHealthDay from "@/components/LogoHealthDay";
 import {
     atualizarUsuario,
+    calcularIMC,
+    classificarIMC,
     gerarDietaAutomatica,
     gerarTreinoAutomatico,
     getUserAtual,
@@ -21,10 +27,9 @@ import {
 } from "@/constants/Storage";
 import { HD } from "@/constants/theme";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Alert,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -76,6 +81,9 @@ export default function QuestionarioScreen() {
   const [altura, setAltura] = useState("");
   const [idade, setIdade] = useState("");
   const [sexo, setSexo] = useState<Sexo | "">("");
+  // true quando altura e peso já vieram da tela de IMC (ou do cadastro do usuário)
+  const [medidasSalvas, setMedidasSalvas] = useState(false);
+  const [editarMedidas, setEditarMedidas] = useState(false);
 
   // Etapa 2 — Objetivos
   const [objetivo, setObjetivo] = useState<Objetivo | "">("");
@@ -90,45 +98,66 @@ export default function QuestionarioScreen() {
   const [localTreino, setLocalTreino] = useState<LocalTreino | "">("");
   const [diasTreino, setDiasTreino] = useState<number>(0);
 
+  // Reaproveita altura e peso já informados, para não perguntar de novo
+  useEffect(() => {
+    let ativo = true;
+    getUserAtual().then((user) => {
+      if (!ativo || !user?.altura || !user?.peso) return;
+      // Só aproveita se estiverem dentro dos limites aceitos neste questionário
+      if (user.altura < 100 || user.altura > 250 || user.peso < 20 || user.peso > 300) return;
+      setAltura(String(user.altura));
+      setPeso(String(user.peso));
+      setMedidasSalvas(true);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const numero = (texto: string) => parseFloat(texto.replace(",", "."));
+  const mostrarCamposMedidas = !medidasSalvas || editarMedidas;
+  const imcAtual =
+    numero(peso) > 0 && numero(altura) > 0 ? calcularIMC(numero(peso), numero(altura)) : null;
+
   // ─── Validações por etapa ─────────────────────────────────────────────────
 
   function validarEtapa(): boolean {
     if (etapa === 1) {
       if (!peso || !altura || !idade || !sexo) {
-        Alert.alert("Atenção", "Preencha todos os campos.");
+        avisar("Atenção", "Preencha todos os campos.");
         return false;
       }
-      const p = parseFloat(peso);
-      const a = parseFloat(altura);
+      const p = numero(peso);
+      const a = numero(altura);
       const i = parseInt(idade);
       if (isNaN(p) || p < 20 || p > 300) {
-        Alert.alert("Atenção", "Peso inválido (20–300 kg).");
+        avisar("Atenção", "Peso inválido (20–300 kg).");
         return false;
       }
       if (isNaN(a) || a < 100 || a > 250) {
-        Alert.alert("Atenção", "Altura inválida (100–250 cm).");
+        avisar("Atenção", "Altura inválida (100–250 cm).");
         return false;
       }
       if (isNaN(i) || i < 10 || i > 100) {
-        Alert.alert("Atenção", "Idade inválida (10–100 anos).");
+        avisar("Atenção", "Idade inválida (10–100 anos).");
         return false;
       }
     }
     if (etapa === 2) {
       if (!objetivo || !nivelAtividade) {
-        Alert.alert("Atenção", "Selecione objetivo e nível de atividade.");
+        avisar("Atenção", "Selecione objetivo e nível de atividade.");
         return false;
       }
     }
     if (etapa === 3) {
       if (!restricao || !refeicoesPorDia) {
-        Alert.alert("Atenção", "Selecione restrição e número de refeições.");
+        avisar("Atenção", "Selecione restrição e número de refeições.");
         return false;
       }
     }
     if (etapa === 4) {
       if (!nivelTreino || !localTreino || !diasTreino) {
-        Alert.alert("Atenção", "Preencha todas as informações de treino.");
+        avisar("Atenção", "Preencha todas as informações de treino.");
         return false;
       }
     }
@@ -148,14 +177,14 @@ export default function QuestionarioScreen() {
     try {
       const user = await getUserAtual();
       if (!user) {
-        Alert.alert("Erro", "Usuário não encontrado.");
+        avisar("Erro", "Usuário não encontrado.");
         return;
       }
 
       const respostas: RespostasQuestionario = {
         usuarioId: user.id,
-        peso: parseFloat(peso),
-        altura: parseFloat(altura),
+        peso: numero(peso),
+        altura: numero(altura),
         idade: parseInt(idade),
         sexo: sexo as Sexo,
         objetivo: objetivo as Objetivo,
@@ -179,15 +208,16 @@ export default function QuestionarioScreen() {
       // Marca questionário como feito e atualiza dados físicos
       await atualizarUsuario({
         ...user,
-        peso: parseFloat(peso),
-        altura: parseFloat(altura),
+        peso: numero(peso),
+        altura: numero(altura),
+        imc: calcularIMC(numero(peso), numero(altura)), // atualiza o IMC se as medidas mudaram
         objetivo: objetivo as Objetivo,
         questionarioFeito: true,
       });
 
       router.replace("/(usuario)/home");
-    } catch (e) {
-      Alert.alert("Erro", "Não foi possível salvar as respostas.");
+    } catch {
+      avisar("Erro", "Não foi possível salvar as respostas.");
     } finally {
       setLoading(false);
     }
@@ -196,6 +226,7 @@ export default function QuestionarioScreen() {
   // ─── Render das etapas ────────────────────────────────────────────────────
 
   return (
+    <View style={styles.raiz}>
     <ScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
@@ -227,25 +258,47 @@ export default function QuestionarioScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>Seus dados físicos</Text>
 
-          <Text style={styles.label}>Peso (kg)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: 70"
-            placeholderTextColor={HD.placeholder}
-            value={peso}
-            onChangeText={setPeso}
-            keyboardType="numeric"
-          />
+          {mostrarCamposMedidas ? (
+            <>
+              <Text style={styles.label}>Peso (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 70"
+                placeholderTextColor={HD.placeholder}
+                value={peso}
+                onChangeText={setPeso}
+                keyboardType="numeric"
+              />
 
-          <Text style={styles.label}>Altura (cm)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: 175"
-            placeholderTextColor={HD.placeholder}
-            value={altura}
-            onChangeText={setAltura}
-            keyboardType="numeric"
-          />
+              <Text style={styles.label}>Altura (cm)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: 175"
+                placeholderTextColor={HD.placeholder}
+                value={altura}
+                onChangeText={setAltura}
+                keyboardType="numeric"
+              />
+            </>
+          ) : (
+            // Medidas já informadas (tela de IMC ou perfil): só mostra o resumo
+            <View style={styles.medidas}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.medidasValor}>
+                  {altura} cm · {peso} kg
+                </Text>
+                {imcAtual !== null && (
+                  <Text style={styles.medidasImc}>
+                    IMC {String(imcAtual).replace(".", ",")} · {classificarIMC(imcAtual)}
+                  </Text>
+                )}
+                <Text style={styles.medidasNota}>Medidas que você já informou. Mudou? Toque em Alterar.</Text>
+              </View>
+              <TouchableOpacity onPress={() => setEditarMedidas(true)} style={styles.medidasAlterar}>
+                <Text style={styles.medidasAlterarTxt}>Alterar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <Text style={styles.label}>Idade</Text>
           <TextInput
@@ -471,12 +524,19 @@ export default function QuestionarioScreen() {
 
       <Text style={styles.tagline}>A chave para a saúde</Text>
     </ScrollView>
+    {/* Avisos do questionário (campos faltando, erros) dentro do app */}
+    <AvisosNaTela />
+    </View>
   );
 }
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  raiz: {
+    flex: 1,
+    backgroundColor: HD.background,
+  },
   container: {
     flexGrow: 1,
     backgroundColor: HD.background,
@@ -532,6 +592,24 @@ const styles = StyleSheet.create({
     color: HD.secondary,
     marginBottom: 16,
   },
+
+  // Resumo de altura e peso vindos da tela de IMC
+  medidas: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: HD.inputBg,
+    borderWidth: 1.5,
+    borderColor: HD.primary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  medidasValor: { fontSize: 16, fontWeight: "700", color: HD.textDark },
+  medidasImc: { fontSize: 13, fontWeight: "600", color: HD.primaryDark, marginTop: 2 },
+  medidasNota: { fontSize: 12, color: HD.textLight, marginTop: 4 },
+  medidasAlterar: { paddingVertical: 6, paddingHorizontal: 8 },
+  medidasAlterarTxt: { fontSize: 14, fontWeight: "700", color: HD.primary },
 
   // Inputs
   label: {

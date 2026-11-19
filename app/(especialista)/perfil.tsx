@@ -3,7 +3,7 @@
  * Tela de perfil do especialista — seguindo o padrão da tela de usuário.
  */
 
-import { AvisosNaTela, Cabecalho, LARGURA_MAXIMA, avisar, confirmar } from '@/components/EspecialistaUI';
+import { AvisosNaTela, Cabecalho, Folha, LARGURA_MAXIMA, avisar, confirmar } from '@/components/EspecialistaUI';
 import { getAlunos } from '@/constants/EspecialistaStorage';
 import {
   atualizarUsuario,
@@ -53,6 +53,7 @@ export default function PerfilEspecialistaScreen() {
   const [user, setUser] = useState<Especialista | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalInfo, setModalInfo] = useState(false);
+  const [modalIdioma, setModalIdioma] = useState(false);
 
   const [nomeEdit, setNomeEdit] = useState('');
   const [especialidade, setEspecialidade] = useState('');
@@ -121,7 +122,7 @@ export default function PerfilEspecialistaScreen() {
         `${total} aluno(s) cadastrado(s) no app. Monte os treinos e as dietas de cada um nas abas Treinos e Dieta.`,
       );
     } else if (id === 'idioma') {
-      avisar('Idioma', 'Português (Brasil)');
+      setModalIdioma(true);
     } else if (id === 'privacidade') {
       avisar('Privacidade', 'Seus dados são armazenados localmente com segurança.');
     }
@@ -273,11 +274,33 @@ export default function PerfilEspecialistaScreen() {
         {/* O modal cobre a tela, então os avisos precisam ser desenhados aqui dentro também */}
         <AvisosNaTela ativo={modalInfo} />
       </Modal>
+
+      {/* ── Modal: idioma (igual ao do usuário) ── */}
+      <Folha visivel={modalIdioma} titulo="Idioma" onFechar={() => setModalIdioma(false)}>
+        <View style={[styles.idiomaLinha, { borderBottomWidth: 1, borderBottomColor: tema.border }]}>
+          <Text style={[styles.idiomaTexto, { color: tema.text }]}>Português (Brasil)</Text>
+          <MaterialIcons name="check-circle" size={22} color={HD.primary} />
+        </View>
+        <View style={styles.idiomaLinha}>
+          <Text style={[styles.idiomaTexto, { color: tema.subtext }]}>English</Text>
+          <Text style={[styles.emBreve, { color: tema.subtext }]}>em breve</Text>
+        </View>
+      </Folha>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Idioma
+  idiomaLinha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  idiomaTexto: { fontSize: 15, fontWeight: '500' },
+  emBreve: { fontSize: 12, fontStyle: 'italic' },
+
   container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

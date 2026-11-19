@@ -5,6 +5,7 @@
  */
 
 import LogoHealthDay from "@/components/LogoHealthDay";
+import SinoLembretes from "@/components/SinoLembretes";
 import {
   criarSolicitacao,
   dataLocalISO,
@@ -196,14 +197,8 @@ export default function TreinosScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons
-            name="notifications-none"
-            size={24}
-            color={HD.primary}
-          />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
+        {/* Sino: próximos lembretes da Agenda */}
+        <SinoLembretes />
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Treino</Text>
           <LogoHealthDay size={32} />

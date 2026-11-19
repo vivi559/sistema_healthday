@@ -3,7 +3,9 @@
  * Calendário com lembretes — seletor estilo alarme para hora/minuto/dia/mês/ano.
  */
 
+import { AvisosNaTela, avisar, confirmar, semContornoWeb } from '@/components/EspecialistaUI';
 import LogoHealthDay from '@/components/LogoHealthDay';
+import SinoLembretes, { lembretesMudaram } from '@/components/SinoLembretes';
 import {
   adicionarLembrete,
   getLembretes,
@@ -16,7 +18,6 @@ import { useTema } from '@/context/TemaContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Modal,
   ScrollView,
   StatusBar,
@@ -61,36 +62,33 @@ function WheelColumn({
   return (
     <View style={wStyles.col}>
       <Text style={[wStyles.colLabel, { color: tema.subtext }]}>{label}</Text>
-      <View style={wStyles.drum}>
-        <TouchableOpacity onPress={prev}>
-          <Text style={[wStyles.itemFade, { color: tema.subtext }]}>{prevItem}</Text>
-        </TouchableOpacity>
-        <View style={[wStyles.selectedWrap, { backgroundColor: tema.background, borderColor: HD.primary }]}>
-          <Text style={wStyles.itemSelected}>{selected}</Text>
-        </View>
-        <TouchableOpacity onPress={next}>
-          <Text style={[wStyles.itemFade, { color: tema.subtext }]}>{nextItem}</Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity onPress={prev} style={wStyles.arrow}>
-        <MaterialIcons name="keyboard-arrow-up" size={24} color={tema.subtext} />
+      <TouchableOpacity onPress={prev} style={wStyles.passo} accessibilityLabel={`${label}: anterior`}>
+        <MaterialIcons name="keyboard-arrow-up" size={22} color={tema.subtext} />
+        <Text style={[wStyles.itemFade, { color: tema.subtext }]}>{prevItem}</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={next} style={wStyles.arrowBottom}>
-        <MaterialIcons name="keyboard-arrow-down" size={24} color={tema.subtext} />
+      <View style={[wStyles.selectedWrap, { backgroundColor: tema.background, borderColor: HD.primary }]}>
+        <Text style={wStyles.itemSelected} numberOfLines={1}>{selected}</Text>
+      </View>
+      <TouchableOpacity onPress={next} style={wStyles.passo} accessibilityLabel={`${label}: próximo`}>
+        <Text style={[wStyles.itemFade, { color: tema.subtext }]}>{nextItem}</Text>
+        <MaterialIcons name="keyboard-arrow-down" size={22} color={tema.subtext} />
       </TouchableOpacity>
     </View>
   );
 }
 
 const wStyles = StyleSheet.create({
-  col:       { alignItems: 'center', flex: 1 },
-  colLabel:  { fontSize: 11, fontWeight: '700', marginBottom: 6, letterSpacing: 0.5, textTransform: 'uppercase' },
-  drum:      { alignItems: 'center', gap: 2, paddingVertical: 4 },
-  selectedWrap: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, minWidth: 52, alignItems: 'center', borderWidth: 1.5 },
-  itemSelected: { fontSize: 22, fontWeight: '800', color: HD.primary },
-  itemFade:     { fontSize: 16, paddingVertical: 4, paddingHorizontal: 8 },
-  arrow:        { marginTop: 6 },
-  arrowBottom:  { marginTop: 2 },
+  // Cada coluna ocupa a mesma fatia da linha e a caixa do valor nunca passa dessa fatia,
+  // então uma coluna não cobre a outra em nenhuma largura de tela
+  col:       { alignItems: 'center', flex: 1, minWidth: 0 },
+  colLabel:  { fontSize: 11, fontWeight: '700', marginBottom: 2, letterSpacing: 0.5, textTransform: 'uppercase' },
+  passo:     { alignItems: 'center', paddingVertical: 2, paddingHorizontal: 12 },
+  selectedWrap: {
+    width: '100%', maxWidth: 104, borderRadius: 10, paddingVertical: 8,
+    alignItems: 'center', borderWidth: 1.5, marginVertical: 2,
+  },
+  itemSelected: { fontSize: 20, fontWeight: '800', color: HD.primary },
+  itemFade:     { fontSize: 15 },
 });
 
 // ── Tela principal ───────────────────────────────────────────────────────────
@@ -142,33 +140,48 @@ export default function AgendaScreen() {
     setModalVisible(true);
   }
 
+  // Ao trocar mês ou ano, o dia escolhido não pode passar do último dia do mês (ex.: 29/02)
+  function ajustarDia(mesCurto: string, anoTxt: string) {
+    const maxDia = getDiasDoMes(Number(anoTxt), MESES_CURTO.indexOf(mesCurto));
+    if (Number(selDia) > maxDia) setSelDia(String(maxDia).padStart(2,'0'));
+  }
+
   async function handleSalvar() {
-    if (!textoLembrete.trim()) {
-      Alert.alert('Atenção', 'Digite o texto do lembrete.');
+    const texto = textoLembrete.trim();
+    if (!texto) {
+      avisar('Atenção', 'Digite o texto do lembrete.');
       return;
     }
     const mesIdx = MESES_CURTO.indexOf(selMes) + 1;
-    const dataStr = `${selAno}-${String(mesIdx).padStart(2,'0')}-${selDia}`;
-    await adicionarLembrete({ usuarioId: userId, texto: textoLembrete, data: dataStr, hora: `${selHora}:${selMin}` });
-    const atualizados = await getLembretes(userId);
-    setLembretes(atualizados);
-    setTextoLembrete('');
-    setModalVisible(false);
-    Alert.alert('Lembrete salvo!', `${textoLembrete}\n${dataStr} às ${selHora}:${selMin}`);
+    const mesTxt = String(mesIdx).padStart(2,'0');
+    const dataStr = `${selAno}-${mesTxt}-${selDia}`;
+    const quando = new Date(Number(selAno), mesIdx - 1, Number(selDia), Number(selHora), Number(selMin));
+    if (quando.getDate() !== Number(selDia)) {
+      avisar('Atenção', 'Essa data não existe. Confira o dia, o mês e o ano.');
+      return;
+    }
+    if (quando.getTime() < Date.now() - 60 * 1000) {
+      avisar('Atenção', 'Escolha uma data e um horário que ainda não passaram.');
+      return;
+    }
+    try {
+      await adicionarLembrete({ usuarioId: userId, texto, data: dataStr, hora: `${selHora}:${selMin}` });
+      setLembretes(await getLembretes(userId));
+      lembretesMudaram();
+      setTextoLembrete('');
+      setModalVisible(false);
+      avisar('Lembrete salvo!', `${texto} · ${selDia}/${mesTxt}/${selAno} às ${selHora}:${selMin}`);
+    } catch {
+      avisar('Erro', 'Não foi possível salvar o lembrete.');
+    }
   }
 
-  async function handleRemover(id: string) {
-    Alert.alert('Remover', 'Deseja remover este lembrete?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover', style: 'destructive',
-        onPress: async () => {
-          await removerLembrete(id);
-          const atualizados = await getLembretes(userId);
-          setLembretes(atualizados);
-        },
-      },
-    ]);
+  function handleRemover(id: string) {
+    confirmar('Remover lembrete', 'Deseja remover este lembrete?', async () => {
+      await removerLembrete(id);
+      setLembretes(await getLembretes(userId));
+      lembretesMudaram();
+    }, 'Remover');
   }
 
   function temLembrete(dia: number): boolean {
@@ -185,10 +198,12 @@ export default function AgendaScreen() {
 
   const totalDias   = getDiasDoMes(ano, mes);
   const primeiroDia = getPrimeiroDia(ano, mes);
-  const lembretesDoMes = lembretes.filter(l => {
-    const [lA, lM] = l.data.split('-').map(Number);
-    return lA === ano && lM === mes + 1;
-  });
+  const lembretesDoMes = lembretes
+    .filter(l => {
+      const [lA, lM] = l.data.split('-').map(Number);
+      return lA === ano && lM === mes + 1;
+    })
+    .sort((a, b) => `${a.data} ${a.hora}`.localeCompare(`${b.data} ${b.hora}`));
 
   const celulas: (number | null)[] = [
     ...Array(primeiroDia).fill(null),
@@ -205,10 +220,8 @@ export default function AgendaScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
+        {/* Sino: próximos lembretes da Agenda */}
+        <SinoLembretes />
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Agenda</Text>
           <LogoHealthDay size={32} />
@@ -302,6 +315,7 @@ export default function AgendaScreen() {
       <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: tema.card }]}>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
             <View style={styles.modalHeaderRow}>
               <Text style={[styles.modalTitulo, { color: tema.text }]}>Novo Lembrete</Text>
@@ -310,31 +324,38 @@ export default function AgendaScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Rodas */}
+            {/* Data: dia, mês e ano numa linha */}
+            <Text style={[styles.rodasTitulo, { color: tema.subtext }]}>Data</Text>
+            <View style={[styles.rodasContainer, { backgroundColor: temaDark ? '#1a1a1a' : HD.cardLight }]}>
+              <WheelColumn label="Dia"  items={diasDoMesSel} selected={selDia} onSelect={setSelDia} temaDark={temaDark} />
+              <WheelColumn label="Mês"  items={MESES_CURTO}  selected={selMes} onSelect={(v) => {
+                setSelMes(v);
+                ajustarDia(v, selAno);
+              }} temaDark={temaDark} />
+              <WheelColumn label="Ano"  items={ANOS}       selected={selAno}  onSelect={(v) => {
+                setSelAno(v);
+                ajustarDia(selMes, v);
+              }} temaDark={temaDark} />
+            </View>
+
+            {/* Horário: hora e minuto noutra linha */}
+            <Text style={[styles.rodasTitulo, { color: tema.subtext }]}>Horário</Text>
             <View style={[styles.rodasContainer, { backgroundColor: temaDark ? '#1a1a1a' : HD.cardLight }]}>
               <WheelColumn label="Hora" items={HORAS}      selected={selHora} onSelect={setSelHora} temaDark={temaDark} />
               <Text style={[styles.separador, { color: HD.primary }]}>:</Text>
               <WheelColumn label="Min"  items={MINUTOS}    selected={selMin}  onSelect={setSelMin}  temaDark={temaDark} />
-              <View style={[styles.separadorV, { backgroundColor: tema.border }]} />
-              <WheelColumn label="Dia"  items={diasDoMesSel} selected={selDia} onSelect={setSelDia} temaDark={temaDark} />
-              <WheelColumn label="Mês"  items={MESES_CURTO}  selected={selMes} onSelect={(v) => {
-                setSelMes(v);
-                const maxDia = getDiasDoMes(Number(selAno), MESES_CURTO.indexOf(v));
-                if (Number(selDia) > maxDia) setSelDia(String(maxDia).padStart(2,'0'));
-              }} temaDark={temaDark} />
-              <WheelColumn label="Ano"  items={ANOS}       selected={selAno}  onSelect={setSelAno}  temaDark={temaDark} />
             </View>
 
             {/* Preview */}
             <View style={styles.previewRow}>
               <Text style={[styles.previewTxt, { color: tema.subtext }]}>
-                {selDia}/{MESES_CURTO.indexOf(selMes) + 1}/{selAno} às {selHora}:{selMin}
+                {selDia}/{String(MESES_CURTO.indexOf(selMes) + 1).padStart(2,'0')}/{selAno} às {selHora}:{selMin}
               </Text>
             </View>
 
             {/* Input */}
             <TextInput
-              style={[styles.lembreteInput, { color: tema.text, borderColor: tema.border, backgroundColor: tema.background }]}
+              style={[styles.lembreteInput, { color: tema.text, borderColor: tema.border, backgroundColor: tema.background }, semContornoWeb]}
               placeholder="Digite seu Lembrete!"
               placeholderTextColor={HD.placeholder}
               value={textoLembrete}
@@ -345,9 +366,15 @@ export default function AgendaScreen() {
             <TouchableOpacity style={styles.btnSalvar} onPress={handleSalvar} activeOpacity={0.8}>
               <Text style={styles.btnSalvarTxt}>Salvar Lembrete</Text>
             </TouchableOpacity>
+          </ScrollView>
           </View>
         </View>
+        {/* O modal cobre a tela, então os avisos precisam ser desenhados aqui dentro também */}
+        <AvisosNaTela ativo={modalVisible} />
       </Modal>
+
+      {/* Avisos e confirmações da Agenda (lembrete salvo, remover...) */}
+      <AvisosNaTela />
     </View>
   );
 }
@@ -401,13 +428,16 @@ const styles = StyleSheet.create({
   removerBtn:    { padding: 4 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalCard:    { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 },
+  modalCard:    {
+    width: '100%', maxWidth: 560, alignSelf: 'center', maxHeight: '92%', // não estica no computador e rola em celular baixo
+    borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 32,
+  },
   modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitulo:  { fontSize: 18, fontWeight: '800' },
 
-  rodasContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, padding: 16, marginBottom: 16, gap: 4 },
-  separador:      { fontSize: 24, fontWeight: '800', marginBottom: 20 },
-  separadorV:     { width: 1, height: 60, marginHorizontal: 4 },
+  rodasTitulo:    { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  rodasContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 10, paddingHorizontal: 8, marginBottom: 14, gap: 6 },
+  separador:      { fontSize: 24, fontWeight: '800', paddingTop: 14 },
 
   previewRow: { alignItems: 'center', marginBottom: 14 },
   previewTxt: { fontSize: 14, fontWeight: '600' },

@@ -4,6 +4,7 @@
  */
 
 import LogoHealthDay from "@/components/LogoHealthDay";
+import SinoLembretes from "@/components/SinoLembretes";
 import {
   adicionarAlimentoExtra,
   alimentosSeed,
@@ -318,10 +319,8 @@ export default function DietaScreen() {
       />
 
       <View style={[styles.header, { backgroundColor: tema.background }]}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
+        {/* Sino: próximos lembretes da Agenda */}
+        <SinoLembretes />
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Dieta</Text>
           <LogoHealthDay size={32} />

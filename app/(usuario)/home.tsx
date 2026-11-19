@@ -5,6 +5,7 @@
  */
 
 import LogoHealthDay from '@/components/LogoHealthDay';
+import SinoLembretes from '@/components/SinoLembretes';
 import { getNoticias, getUserAtual, type Noticia, type User } from '@/constants/Storage';
 import { HD, darkTheme, lightTheme } from '@/constants/theme';
 import { useTema } from '@/context/TemaContext';
@@ -63,10 +64,8 @@ export default function HomeScreen() {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: tema.background }]}>
-        <TouchableOpacity style={styles.notifBtn}>
-          <MaterialIcons name="notifications-none" size={24} color={HD.primary} />
-          <View style={styles.notifBadge} />
-        </TouchableOpacity>
+        {/* Sino: próximos lembretes da Agenda */}
+        <SinoLembretes />
 
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Home</Text>
@@ -206,12 +205,19 @@ export default function HomeScreen() {
   );
 }
 
+// Largura máxima do conteúdo (a mesma das telas do especialista). No celular não faz
+// diferença; no navegador do computador evita que a tela se estique de ponta a ponta.
+const LARGURA_MAXIMA = 720;
+const centralizado = { width: '100%', alignSelf: 'center' } as const;
+
 const styles = StyleSheet.create({
   container:        { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Header
   header: {
+    ...centralizado,
+    maxWidth: LARGURA_MAXIMA + 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -236,11 +242,11 @@ const styles = StyleSheet.create({
   menuBtn:      { width: 40, height: 40 },
 
   // Saudação
-  saudacao: { fontSize: 16, fontWeight: '600', paddingHorizontal: 20, marginBottom: 8 },
+  saudacao: { ...centralizado, maxWidth: LARGURA_MAXIMA + 40, fontSize: 16, fontWeight: '600', paddingHorizontal: 20, marginBottom: 8 },
 
   // Scroll
   scroll:        { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
+  scrollContent: { ...centralizado, maxWidth: LARGURA_MAXIMA + 40, paddingHorizontal: 20, paddingTop: 8 },
 
   // Vazio
   vazioWrap: { alignItems: 'center', marginTop: 80, gap: 16 },
@@ -282,6 +288,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
+    ...centralizado,
+    maxWidth: 560, // mesma largura dos modais do especialista
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
